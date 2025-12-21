@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="profile-container-expanded" id="profile-main-container">
+        <!-- Background Layer -->
+        <div id="profile-background" class="profile-background default-bg"></div>
+
+        <div class="profile-dashboard">
+            <!-- Left Column: Identity -->
+            <div class="profile-sidebar-card">
+                <div class="profile-identity">
+                    <div class="avatar-frame" id="avatar-frame">
+                        <span id="current-avatar" class="large-avatar">😀</span>
+                    </div>
+                    <h2 id="display-name">Explorer</h2>
+                    <div id="equipped-title" class="profile-title-badge">Novice</div>
+                    
+                    <div class="profile-stats-mini">
+                        <div class="stat-row">
+                            <span>Cash:</span>
+                            <span id="profile-cash" class="money-text">$0.00</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Net Worth:</span>
+                            <span id="profile-networth" class="money-text">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button id="edit-profile-btn" class="btn btn-secondary btn-sm">✏️ Edit Info</button>
+                        <button id="open-shop-btn" class="btn btn-primary btn-sm" style="display:none;">🛒 Shop</button>
+                        <button id="open-inventory-btn" class="btn btn-accent btn-sm">🎒 Inventory</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: The "Room" -->
+            <div class="profile-room-display">
+                <div class="room-header">
+                    <h3>🏆 Trophy Case</h3>
+                </div>
+                <div id="badges-display" class="badges-shelf">
+                    <!-- Badges go here -->
+                    <p class="empty-shelf-text">Earn badges to display them here!</p>
+                </div>
+
+                <div class="room-header" style="margin-top: 2rem;">
+                    <h3>🛋️ My Room</h3>
+                </div>
+                <div id="decorations-display" class="decorations-grid room-grid">
+                    <!-- Equipped items go here -->
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                </div>
+                
+                <div class="room-header" style="margin-top: 2rem;">
+                    <h3>📜 About Me</h3>
+                </div>
+                <div class="about-me-card">
+                    <p id="display-fun-fact">No fun fact shared yet.</p>
+                    <span id="display-era" class="era-tag">Unknown Era</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-edit-modal">&times;</span>
+            <h2>Edit Profile</h2>
+            <form id="profile-form">
+                <div class="form-group">
+                    <label>Choose your Avatar</label>
+                    <div class="emoji-grid" id="emoji-picker">
+                        <!-- Emojis will be injected here -->
+                    </div>
+                    <input type="hidden" id="selected-avatar" name="avatar">
+                </div>
+
+                <div class="form-group">
+                    <label for="nickname">Nickname</label>
+                    <input type="text" id="nickname" placeholder="What should we call you?">
+                </div>
+
+                <div class="form-group">
+                    <label for="favorite-era">Favorite Historical Era</label>
+                    <select id="favorite-era">
+                        <option value="">Select an era...</option>
+                        <option value="Ancient Civilizations">Ancient Civilizations</option>
+                        <option value="Middle Ages">Middle Ages</option>
+                        <option value="Age of Exploration">Age of Exploration</option>
+                        <option value="Revolutionary War">Revolutionary War</option>
+                        <option value="Civil War">Civil War</option>
+                        <option value="Modern History">Modern History</option>
+                        <option value="Future History">Future History (Sci-Fi)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fun-fact">Fun Fact About Me</label>
+                    <textarea id="fun-fact" rows="3" placeholder="I can recite the preamble..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shop Modal -->
+    <div id="shop-modal" class="modal">
+        <div class="modal-content shop-content">
+            <span class="close-modal" id="close-shop-modal">&times;</span>
+            <div class="shop-header">
+                <h2>🛒 The General Store</h2>
+                <div class="shop-balance">
+                    <span>Your Cash:</span>
+                    <span id="shop-user-balance" class="money-text">$0.00</span>
+                </div>
+            </div>
+            
+            <div class="shop-tabs">
+                <button class="shop-tab active" data-category="all">All</button>
+                <button class="shop-tab" data-category="background">Backgrounds</button>
+                <button class="shop-tab" data-category="title">Titles</button>
+                <button class="shop-tab" data-category="decoration">Decorations</button>
+            </div>
+
+            <div id="shop-grid" class="shop-grid">
+                <!-- Shop Items Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Modal -->
+    <div id="inventory-modal" class="modal">
+        <div class="modal-content shop-content">
+            <span class="close-modal" id="close-inventory-modal">&times;</span>
+            <h2>🎒 My Inventory</h2>
+            <p>Click an item to equip or unequip it.</p>
+            <div id="inventory-grid" class="shop-grid">
+                <!-- Inventory Items Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="profile.js"></script>
+</body>
+</html>

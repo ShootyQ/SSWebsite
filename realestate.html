@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="container">
+        <div class="market-header">
+            <h2>🏘️ Real Estate Market</h2>
+            <div class="user-balance-display">
+                <span>Cash: <span id="user-cash" class="money-text">$0.00</span></span>
+                <span>Daily Income: <span id="user-income" class="money-text success">+$0.00</span></span>
+                <span>Daily Rent: <span id="user-rent" class="money-text error">-$0.00</span></span>
+            </div>
+        </div>
+
+        <div class="market-tabs">
+            <button class="tab-btn active" data-tab="housing">🏠 Housing (Live)</button>
+            <button class="tab-btn" data-tab="commercial">🏢 Commercial (Invest)</button>
+        </div>
+
+        <!-- Housing Tab -->
+        <div id="housing" class="tab-content active">
+            <div class="info-banner">
+                <p><strong>Why Rent?</strong> Better homes give you <strong>XP Multipliers</strong> on lessons!</p>
+                <p><strong>Why Buy?</strong> Stop paying daily rent forever!</p>
+            </div>
+            <div id="housing-grid" class="real-estate-grid">
+                <!-- Housing Cards Injected Here -->
+            </div>
+        </div>
+
+        <!-- Commercial Tab -->
+        <div id="commercial" class="tab-content">
+            <div class="info-banner">
+                <p><strong>Be the Landlord!</strong> Buy these properties to earn <strong>Passive Income</strong> every day you login.</p>
+            </div>
+            <div id="commercial-grid" class="real-estate-grid">
+                <!-- Commercial Cards Injected Here -->
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Social Studies Explorer. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="realestate.js"></script>
+</body>
+</html>

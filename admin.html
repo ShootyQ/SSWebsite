@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="logo">
+            <h1>SS Explorer</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="stockmarket.html">Market</a></li>
+                <li><a href="students.html">Community</a></li>
+                <li><a href="badges.html">Badges</a></li>
+                <li><a href="#">Topics</a></li>
+                <li><a href="#">Resources</a></li>
+                <li><a href="profile.html" id="profile-link" style="display: none;">My Profile</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <button id="logout-btn" class="btn btn-primary">Logout</button>
+        </div>
+    </header>
+
+    <main class="admin-container">
+        <h2>User Management</h2>
+        <div id="loading-message">Loading users...</div>
+        <div class="table-responsive">
+            <table id="users-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-list">
+                    <!-- Users will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <hr style="margin: 3rem 0; border: 0; border-top: 1px solid #eee;">
+
+        <h2>Create New Lesson</h2>
+        <div class="profile-card" style="max-width: 800px; margin: 0 auto;">
+            <form id="create-lesson-form">
+                <div class="form-group">
+                    <label for="lesson-title">Lesson Title</label>
+                    <input type="text" id="lesson-title" required placeholder="e.g., Understanding Inflation">
+                </div>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="lesson-category">Category</label>
+                        <select id="lesson-category" required>
+                            <option value="basics">Market Basics</option>
+                            <option value="strategy">Trading Strategy</option>
+                            <option value="economics">Economics</option>
+                            <option value="history">Financial History</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="lesson-difficulty">Difficulty</label>
+                        <select id="lesson-difficulty" required>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="lesson-reward">Reward Amount ($)</label>
+                    <input type="number" id="lesson-reward" required min="10" value="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="lesson-description">Short Description</label>
+                    <input type="text" id="lesson-description" required placeholder="One sentence summary...">
+                </div>
+
+                <div class="form-group">
+                    <label for="lesson-content">Lesson Content (HTML allowed)</label>
+                    <textarea id="lesson-content" rows="6" required placeholder="<p>Write your lesson content here...</p>"></textarea>
+                </div>
+
+                <h3>Quiz Questions</h3>
+                <div id="questions-container">
+                    <!-- Questions will be added here -->
+                </div>
+                <button type="button" id="add-question-btn" class="btn btn-secondary" style="margin-bottom: 1.5rem;">+ Add Question</button>
+
+                <button type="submit" class="btn btn-primary btn-block">Publish Lesson</button>
+            </form>
+        </div>
+    </main>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

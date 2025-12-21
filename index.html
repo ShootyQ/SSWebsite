@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Studies Explorer | Build Your Empire</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Landing Page Specific Overrides */
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --dark-bg: #0a0a12;
+            --card-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        /* Hero Section Overhaul */
+        .hero {
+            background: radial-gradient(circle at top right, #1a1a2e 0%, #000 100%);
+            position: relative;
+            overflow: hidden;
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 2rem;
+        }
+
+        /* Animated Background Blobs */
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.6;
+            animation: float 10s infinite ease-in-out;
+        }
+        .blob-1 {
+            top: -10%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: var(--primary-color);
+            animation-delay: 0s;
+        }
+        .blob-2 {
+            bottom: -10%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: var(--secondary-color);
+            animation-delay: 5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -30px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 900px;
+        }
+
+        .hero h2 {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(74, 144, 226, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            color: #cbd5e1;
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
+        .btn-glow {
+            background: linear-gradient(45deg, var(--primary-color), #3b82f6);
+            color: white;
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 0 20px rgba(74, 144, 226, 0.5);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 0 40px rgba(74, 144, 226, 0.8);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+            transform: translateY(-5px);
+        }
+
+        /* Features Grid */
+        .features-section {
+            padding: 6rem 2rem;
+            background: #0f0f1a;
+            position: relative;
+            z-index: 2;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 4rem;
+            font-weight: 800;
+        }
+        .section-title span {
+            color: var(--secondary-color);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card-dark {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 2.5rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card-dark:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .feature-card-dark::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: translateX(-100%);
+            transition: 0.5s;
+        }
+
+        .feature-card-dark:hover::before {
+            transform: translateX(100%);
+        }
+
+        .feature-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        .feature-card-dark h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .feature-card-dark p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        /* Stats Ticker */
+        .ticker-wrap {
+            width: 100%;
+            background: var(--primary-color);
+            padding: 1rem 0;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            z-index: 5;
+            transform: rotate(-1deg) scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin: 2rem 0;
+        }
+
+        .ticker {
+            display: inline-block;
+            animation: ticker 20s linear infinite;
+        }
+
+        .ticker-item {
+            display: inline-block;
+            padding: 0 2rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h2 { font-size: 3rem; }
+            .hero p { font-size: 1.1rem; }
+            .cta-group { flex-direction: column; }
+            .blob { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main>
+        <section class="hero">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+            
+            <div class="hero-content">
+                <h2>Don't Just Learn History.<br>Own It.</h2>
+                <p>Turn your grades into gold. Master the curriculum to earn cash, trade real-time stocks, and collect legendary items. The past just got profitable.</p>
+                
+                <div class="cta-group">
+                    <a href="lessons.html" class="btn-glow">Start Earning 🚀</a>
+                    <a href="stockmarket.html" class="btn-outline">View Market 📈</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="ticker-wrap">
+            <div class="ticker">
+                <div class="ticker-item">🔥 EARN CASH FOR GRADES</div>
+                <div class="ticker-item">💎 COLLECT RARE ITEMS</div>
+                <div class="ticker-item">📈 INVEST IN REAL STOCKS</div>
+                <div class="ticker-item">🚀 BUILD YOUR EMPIRE</div>
+                <div class="ticker-item">🔥 EARN CASH FOR GRADES</div>
+                <div class="ticker-item">💎 COLLECT RARE ITEMS</div>
+                <div class="ticker-item">📈 INVEST IN REAL STOCKS</div>
+                <div class="ticker-item">🚀 BUILD YOUR EMPIRE</div>
+            </div>
+        </div>
+
+        <section class="features-section">
+            <h2 class="section-title">How to <span>Dominate</span></h2>
+            
+            <div class="features-grid">
+                <div class="feature-card-dark">
+                    <div class="feature-icon">🧠</div>
+                    <h3>1. Crush Lessons</h3>
+                    <p>Complete interactive history and civics modules. Every correct answer adds cash to your wallet. Knowledge pays.</p>
+                </div>
+
+                <div class="feature-card-dark">
+                    <div class="feature-icon">💸</div>
+                    <h3>2. Secure the Bag</h3>
+                    <p>Watch your balance grow. Use your earnings to buy assets or save up for that legendary item you've been eyeing.</p>
+                </div>
+
+                <div class="feature-card-dark">
+                    <div class="feature-icon">📈</div>
+                    <h3>3. Play the Market</h3>
+                    <p>Invest in real-world stocks like Apple and Tesla. Track trends, buy the dip, and sell high to multiply your net worth.</p>
+                </div>
+
+                <div class="feature-card-dark">
+                    <div class="feature-icon">👑</div>
+                    <h3>4. Flex Your Status</h3>
+                    <p>Unlock rare badges, customize your profile, and trade on the student marketplace. Be the tycoon of the classroom.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Social Studies Explorer. All rights reserved.</p>
+    </footer>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+</body>
+</html>

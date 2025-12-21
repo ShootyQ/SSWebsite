@@ -1,0 +1,32 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "append_css",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"echo \".lesson-footer { margin-top: 2rem; text-align: center; }\" >> styles.css"
+			],
+			"group": "none"
+		},
+		{
+			"label": "append_css_fee",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"echo \".cost-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; } .total-row { font-weight: bold; border-top: 1px solid #eee; padding-top: 0.5rem; margin-top: 0.5rem; }\" >> styles.css"
+			],
+			"group": "none"
+		},
+		{
+			"label": "append_css_container",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"echo \".container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; } .lesson-card.completed { opacity: 0.7; background-color: #f5f5f5; border-color: #ccc; } .lesson-card.completed:hover { transform: none; box-shadow: none; }\" >> styles.css"
+			],
+			"group": "none"
+		}
+	]
+}

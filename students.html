@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>Student Community</h2>
+            <p>Meet your fellow traders and learners!</p>
+        </div>
+
+        <div id="students-grid" class="students-grid">
+            <div class="loading-spinner">Loading Community...</div>
+        </div>
+    </main>
+
+    <!-- Student Detail Modal -->
+    <div id="student-modal" class="modal">
+        <div class="modal-content profile-card-modal">
+            <span class="close-modal">&times;</span>
+            <div class="modal-header-profile">
+                <div class="profile-avatar-large" id="modal-avatar">😊</div>
+                <h2 id="modal-nickname">Student Name</h2>
+                <div id="modal-badges" class="badges-container"></div>
+            </div>
+            <div class="modal-body-profile">
+                <div class="info-group">
+                    <label>Fun Fact</label>
+                    <p id="modal-fun-fact">No fun fact shared yet.</p>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-box-small">
+                        <span class="label">Net Worth</span>
+                        <span class="value" id="modal-net-worth">$0</span>
+                    </div>
+                    <div class="stat-box-small">
+                        <span class="label">Portfolio</span>
+                        <span class="value" id="modal-portfolio-count">0 Stocks</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="students.js"></script>
+</body>
+</html>

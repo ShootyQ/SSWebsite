@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessons - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>📚 Financial Academy</h2>
+            <p>Master the market, earn cash, and collect knowledge badges.</p>
+        </div>
+
+        <!-- Search & Filter Section -->
+        <div class="lessons-controls">
+            <div class="search-box">
+                <input type="text" id="lesson-search" placeholder="Search lessons...">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="filter-group">
+                <select id="category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="basics">Market Basics</option>
+                    <option value="strategy">Trading Strategy</option>
+                    <option value="economics">Economics</option>
+                    <option value="history">Financial History</option>
+                </select>
+                <select id="difficulty-filter">
+                    <option value="all">All Levels</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats / Progress (Optional, maybe later) -->
+        <div class="lessons-progress-bar" id="user-lesson-progress" style="display:none;">
+            <span>Your Progress: <b id="completed-count">0</b> completed</span>
+            <div class="progress-track">
+                <div class="progress-fill" id="lesson-progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Lessons Grid -->
+        <div id="lessons-grid" class="lessons-grid">
+            <!-- Lessons injected here -->
+            <div class="loading-spinner">Loading lessons...</div>
+        </div>
+    </main>
+
+    <!-- Lesson Modal -->
+    <div id="lesson-modal" class="modal">
+        <div class="modal-content lesson-content">
+            <span class="close-modal" id="close-lesson-modal">&times;</span>
+            
+            <div class="lesson-header-modal">
+                <span class="badge-tag" id="modal-category">Basics</span>
+                <h2 id="modal-title">Introduction to Stocks</h2>
+                <div class="lesson-meta">
+                    <span id="modal-difficulty">Beginner</span> • 
+                    <span class="reward-text">💰 <span id="modal-reward">100</span></span>
+                </div>
+            </div>
+
+            <div class="lesson-body">
+                <div id="modal-content" class="lesson-text">
+                    <!-- Content goes here -->
+                </div>
+
+                <div class="quiz-section" id="quiz-section">
+                    <h3>🧠 Knowledge Check</h3>
+                    <div id="quiz-container">
+                        <!-- Quiz questions injected here -->
+                    </div>
+                    <div id="quiz-feedback" class="quiz-feedback"></div>
+                </div>
+            </div>
+
+            <div class="lesson-footer">
+                <button id="submit-quiz-btn" class="btn btn-primary btn-lg">Submit Answers & Claim Reward</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="lessons.js"></script>
+</body>
+</html>

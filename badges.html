@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badges - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>Collections</h2>
+            <p>Track your progress, earn badges, and discover items!</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('badges')">Badges</button>
+            <button class="tab-btn" onclick="switchTab('items')">Item Catalog</button>
+        </div>
+
+        <!-- Badges Section -->
+        <div id="tab-badges" class="tab-content active">
+            <div class="badges-stats">
+                <div class="progress-bar-container">
+                    <div class="progress-label">
+                        <span>Badge Progress</span>
+                        <span id="progress-text">0 / 30</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="badges-grid" class="badges-grid">
+                <div class="loading-spinner">Loading Badges...</div>
+            </div>
+        </div>
+
+        <!-- Item Catalog Section -->
+        <div id="tab-items" class="tab-content" style="display: none;">
+            <div class="badges-stats">
+                <div class="progress-bar-container">
+                    <div class="progress-label">
+                        <span>Item Collection</span>
+                        <span id="item-progress-text">0 / 0</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="item-progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3>Artifacts & Tools</h3>
+            <div id="catalog-grid" class="catalog-grid">
+                <div class="loading-spinner">Loading Catalog...</div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabName).style.display = 'block';
+            document.querySelector(`button[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+    </script>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="badges.js"></script>
+</body>
+</html>

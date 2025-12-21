@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="market-container">
+        <!-- Sidebar Navigation -->
+        <aside class="market-sidebar">
+            <div class="sidebar-menu">
+                <button class="sidebar-btn active" data-view="market">
+                    <span class="icon">📈</span> Market
+                </button>
+                <button class="sidebar-btn" data-view="leaders">
+                    <span class="icon">🏆</span> Leaders
+                </button>
+                <button class="sidebar-btn" data-view="stats">
+                    <span class="icon">📊</span> Statistics
+                </button>
+            </div>
+        </aside>
+
+        <!-- Market View (Default) -->
+        <div id="market-view" class="market-view-content">
+            <!-- User Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Cash Balance</span>
+                    <span class="stat-value" id="user-balance">$0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Portfolio Value</span>
+                    <span class="stat-value" id="portfolio-value">$0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Net Worth</span>
+                    <span class="stat-value" id="net-worth">$0.00</span>
+                </div>
+            </div>
+
+            <div class="market-layout">
+                <!-- Left Column: Market List -->
+                <div class="market-list-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>Market Movers</h3>
+                        <div id="admin-controls" style="display: none; display: flex; gap: 10px; align-items: center;">
+                            <label class="switch">
+                                <input type="checkbox" id="auto-refresh-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <span style="font-size: 0.8rem; font-weight: 600;">Auto-Market</span>
+                            <button id="refresh-market-btn" class="btn-sm btn-primary">Manual Refresh</button>
+                        </div>
+                    </div>
+                    <div class="stock-list-header">
+                        <span>Symbol</span>
+                        <span>Price</span>
+                        <span>Change</span>
+                        <span>Action</span>
+                    </div>
+                    <div id="stock-list" class="stock-list">
+                        <!-- Stocks Injected Here -->
+                        <div class="loading-spinner">Loading Market Data...</div>
+                    </div>
+                    <div id="last-updated" style="text-align: center; font-size: 0.8rem; color: #888; margin-top: 1rem;"></div>
+                </div>
+
+                <!-- Right Column: Portfolio & Details -->
+                <div class="portfolio-section">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="portfolio">My Portfolio</button>
+                    </div>
+
+                    <div id="portfolio-tab" class="tab-content active">
+                        <table class="portfolio-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Shares</th>
+                                    <th>Avg Price</th>
+                                    <th>Current Value</th>
+                                    <th>Gain/Loss</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portfolio-list">
+                                <!-- Portfolio Items Injected Here -->
+                            </tbody>
+                        </table>
+                        <div id="empty-portfolio-msg" style="display:none; text-align:center; padding: 2rem; color: #666;">
+                            You don't own any stocks yet. Start trading!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaders View -->
+        <div id="leaders-view" class="market-view-content" style="display: none;">
+            <div class="feature-card" style="text-align: left; max-width: 100%;">
+                <h3>🏆 Top Traders</h3>
+                <div class="table-responsive">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Trader</th>
+                                <th>Net Worth</th>
+                                <th>Portfolio Size</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-list">
+                            <!-- Leaderboard Items Injected Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics View -->
+        <div id="stats-view" class="market-view-content" style="display: none;">
+            <div class="feature-card" style="text-align: left; max-width: 100%;">
+                <h3>📊 My Performance</h3>
+                
+                <div class="chart-container" style="position: relative; height:300px; width:100%; margin-bottom: 2rem;">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+
+                <h3>📜 Transaction History</h3>
+                <div class="table-responsive">
+                    <table class="portfolio-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Symbol</th>
+                                <th>Shares</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-history-list">
+                            <!-- Transactions Injected Here -->
+                        </tbody>
+                    </table>
+                    <div id="no-transactions-msg" style="display:none; text-align:center; padding: 1rem; color: #666;">
+                        No transactions found.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Buy/Sell Modal -->
+    <div id="trade-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-stock-symbol">AAPL</h2>
+            <p id="modal-stock-name">Apple Inc.</p>
+            <div class="trade-info">
+                <p>Current Price: <span id="modal-current-price" class="price-highlight">$150.00</span></p>
+                <p>Your Cash: <span id="modal-user-cash">$1000.00</span></p>
+            </div>
+            
+            <div class="trade-actions">
+                <div class="trade-type-selector">
+                    <button class="trade-type-btn active" data-type="buy">Buy</button>
+                    <button class="trade-type-btn" data-type="sell">Sell</button>
+                </div>
+                
+                <div class="input-group">
+                    <label>Shares</label>
+                    <input type="number" id="share-input" min="1" value="1">
+                </div>
+
+                <div class="total-cost">
+                    <div class="cost-row">
+                        <span>Subtotal:</span>
+                        <span id="trade-subtotal">$0.00</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Trading Fee:</span>
+                        <span id="trade-fee">$2.00</span>
+                    </div>
+                    <div class="cost-row total-row">
+                        <span>Total:</span>
+                        <span id="trade-total">$0.00</span>
+                    </div>
+                </div>
+
+                <button id="confirm-trade-btn" class="btn btn-primary btn-block">Confirm Buy</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="stockmarket.js"></script>
+</body>
+</html>

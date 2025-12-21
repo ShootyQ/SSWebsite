@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Marketplace - SS Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>Student Marketplace</h2>
+            <p>Buy and sell rare items with other students!</p>
+        </div>
+
+        <div class="marketplace-controls">
+            <input type="text" id="market-search" placeholder="Search for items...">
+            <select id="market-sort">
+                <option value="newest">Newest Listed</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+            </select>
+            <button id="refresh-market" class="btn btn-secondary">Refresh</button>
+        </div>
+
+        <div id="market-grid" class="shop-grid">
+            <!-- Listings will appear here -->
+            <p>Loading marketplace...</p>
+        </div>
+    </main>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="marketplace.js"></script>
+</body>
+</html>
