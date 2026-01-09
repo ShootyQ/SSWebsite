@@ -42,18 +42,16 @@ let tradeType = "buy";
 let autoRefreshInterval = null;
 let currentBatchIndex = 0;
 const BATCH_SIZE = 50;
-const REFRESH_RATE_MS = 120000; // 2 minutes
+const REFRESH_RATE_MS = 60000; // 60 seconds (safe for API limits)
 
 // Initialize
 function init() {
     setupEventListeners();
-
-    // Restore Auto-Refresh State
-    const savedAutoRefresh = localStorage.getItem('marketAutoRefresh') === 'true';
-    if (savedAutoRefresh && autoRefreshToggle) {
-        autoRefreshToggle.checked = true;
-        toggleAutoRefresh(true);
-    }
+    
+    // Start "Community Maintenance" Loop
+    // Every 10 seconds, check if market data is stale.
+    // If stale, attempt to become the updater.
+    setInterval(checkMarketStaleness, 10000);
 }
 
 // Auth & Data Listener
@@ -61,13 +59,10 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         
-        // 1. Check User Role for Admin Button
+        // 1. Get User Data
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && userSnap.data().role === 'admin') {
-            adminControls.style.display = "flex";
-        }
-
+        
         // 2. Listen for User Data (Balance/Portfolio)
         onSnapshot(userRef, (doc) => {
             if (doc.exists()) {
@@ -136,6 +131,37 @@ function renderStockList() {
     });
 }
 
+// Calculate weighted average cost basis
+function calculateAverageCost(symbol, transactions) {
+    if (!transactions || transactions.length === 0) return 0;
+
+    // Filter for symbol and sort by date ascending (oldest first)
+    const stockTrans = transactions
+        .filter(t => t.symbol === symbol)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let totalShares = 0;
+    let totalCost = 0;
+
+    stockTrans.forEach(t => {
+        if (t.type === 'buy') {
+            // Add new lot
+            totalShares += t.shares;
+            totalCost += t.total; // Total includes fees
+        } else if (t.type === 'sell') {
+            // Reduce shares, keep average cost same
+            // To do this, we reduce totalCost proportional to shares sold
+            if (totalShares > 0) {
+                const avgCost = totalCost / totalShares;
+                totalShares -= t.shares;
+                totalCost = totalShares * avgCost;
+            }
+        }
+    });
+
+    return totalShares > 0 ? totalCost / totalShares : 0;
+}
+
 // Update Dashboard UI
 function updateDashboard() {
     if (!userData || marketData.length === 0) return;
@@ -147,7 +173,8 @@ function updateDashboard() {
     let totalPortfolioValue = 0;
     portfolioListEl.innerHTML = "";
     
-    const portfolioItems = Object.entries(userData.portfolio);
+    // Ensure portfolio is valid
+    const portfolioItems = userData.portfolio ? Object.entries(userData.portfolio) : [];
     
     if (portfolioItems.length === 0) {
         document.getElementById("empty-portfolio-msg").style.display = "block";
@@ -156,19 +183,31 @@ function updateDashboard() {
         
         portfolioItems.forEach(([symbol, shares]) => {
             const stock = marketData.find(s => s.symbol === symbol);
-            // If stock not in current market list, we might need to handle gracefully
-            // For now, assume it exists or skip
+            
             if (stock && shares > 0) {
                 const currentValue = stock.price * shares;
                 totalPortfolioValue += currentValue;
                 
+                // Calculate Cost Basis
+                const avgCost = calculateAverageCost(symbol, userData.transactions);
+                const totalCost = avgCost * shares;
+                
+                // Gain/Loss Calculations
+                const gainLossAmt = currentValue - totalCost;
+                const gainLossPct = totalCost > 0 ? (gainLossAmt / totalCost) * 100 : 0;
+                
+                const glClass = gainLossAmt >= 0 ? "price-up" : "price-down";
+                const glSign = gainLossAmt >= 0 ? "+" : "";
+
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${symbol}</td>
                     <td>${shares}</td>
-                    <td>$${stock.price.toFixed(2)}</td>
+                    <td>${formatCurrency(avgCost)}</td>
+                    <td>${formatCurrency(stock.price)}</td>
                     <td>${formatCurrency(currentValue)}</td>
-                    <td class="${stock.change >= 0 ? 'price-up' : 'price-down'}">${stock.change >= 0 ? '+' : ''}${stock.change}%</td> 
+                    <td class="${glClass}">${glSign}${formatCurrency(Math.abs(gainLossAmt))}</td>
+                    <td class="${glClass}">${glSign}${gainLossPct.toFixed(2)}%</td>
                     <td><button class="btn-sm btn-secondary sell-btn" data-symbol="${symbol}">Sell</button></td>
                 `;
                 portfolioListEl.appendChild(row);
@@ -187,6 +226,15 @@ function updateDashboard() {
     const currentNetWorth = userData.balance + totalPortfolioValue;
     netWorthEl.textContent = formatCurrency(currentNetWorth);
 
+    // Calculate Total All-Time Profit (Net Worth - Start Balance 1000)
+    const initialBalance = 1000;
+    const totalProfit = currentNetWorth - initialBalance;
+    const profitEl = document.getElementById("total-profit");
+    if (profitEl) {
+        profitEl.textContent = (totalProfit >= 0 ? "+" : "-") + formatCurrency(Math.abs(totalProfit));
+        profitEl.className = "stat-value " + (totalProfit >= 0 ? "price-up" : "price-down");
+    }
+
     // Update Net Worth in Firestore (Debounced or just fire-and-forget)
     if (currentUser) {
         updateDoc(doc(db, "users", currentUser.uid), {
@@ -195,18 +243,69 @@ function updateDashboard() {
     }
 }
 
-// --- Finnhub Integration (Admin Only) ---
+async function checkMarketStaleness() {
+    if (!currentUser) return;
+
+    try {
+        const marketRef = doc(db, "system", "market");
+        const snap = await getDoc(marketRef);
+        
+        if (!snap.exists()) {
+             // Init if needed
+             refreshMarketData(true);
+             return;
+        }
+
+        const data = snap.data();
+        const lastUpdated = data.lastUpdated ? data.lastUpdated.toDate() : new Date(0);
+        const now = new Date();
+        const diffMs = now - lastUpdated;
+
+        // If data is older than Refresh Rate (60s), initiate update protocol
+        if (diffMs > REFRESH_RATE_MS) {
+            console.log(`Market data stale (${Math.round(diffMs/1000)}s old). Attempting community update...`);
+            
+            // Random delay (0-10s) to minimize collision between students
+            const delay = Math.random() * 10000;
+            setTimeout(() => refreshMarketData(true), delay);
+        }
+    } catch (err) {
+        console.error("Staleness check failed:", err);
+    }
+}
+
+// --- Finnhub Integration (Community Maintenance) ---
 async function refreshMarketData(isAuto = false) {
-    if (!isAuto) {
+    if (!isAuto && refreshBtn) {
         refreshBtn.disabled = true;
         refreshBtn.textContent = "Updating...";
     }
     
     try {
-        // Determine Batch
-        // Load index from storage to persist across reloads
-        currentBatchIndex = parseInt(localStorage.getItem('marketBatchIndex') || '0');
+        const marketRef = doc(db, "system", "market");
         
+        // 1. Double-Check Staleness & Lock (Simple check)
+        const marketSnap = await getDoc(marketRef);
+        let currentStocks = [];
+        let nextBatch = 0;
+        
+        if (marketSnap.exists()) {
+            const data = marketSnap.data();
+            currentStocks = data.stocks || [];
+            nextBatch = data.nextBatchIndex || 0;
+            
+            // If someone updated it while we were waiting in the random delay
+            if (data.lastUpdated) {
+                 const justNow = new Date();
+                 if ((justNow - data.lastUpdated.toDate()) < REFRESH_RATE_MS) {
+                     console.log("Update aborted: Data was refreshed by another user.");
+                     return;
+                 }
+            }
+        }
+
+        // 2. Fetch Batch
+        currentBatchIndex = nextBatch;
         const start = currentBatchIndex * BATCH_SIZE;
         const end = start + BATCH_SIZE;
         const batchSymbols = STOCK_SYMBOLS.slice(start, end);
@@ -218,12 +317,11 @@ async function refreshMarketData(isAuto = false) {
                 const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`);
                 const data = await response.json();
                 
-                // Finnhub returns: c (current), d (change), dp (percent change), etc.
                 return {
                     symbol: symbol,
-                    name: symbol, // Using symbol as name for now to save API calls
+                    name: symbol, 
                     price: data.c,
-                    change: data.dp, // Percent change
+                    change: data.dp, 
                     lastUpdated: new Date()
                 };
             } catch (err) {
@@ -234,23 +332,13 @@ async function refreshMarketData(isAuto = false) {
 
         const results = (await Promise.all(promises)).filter(s => s !== null);
         
-        // Merge with existing data
-        // Ensure we have the latest data before merging to avoid overwriting with zeros
-        if (marketData.length === 0) {
-             const marketDoc = await getDoc(doc(db, "system", "market"));
-             if (marketDoc.exists()) {
-                 marketData = marketDoc.data().stocks || [];
-             }
-        }
-
-        let updatedStocks = [...marketData];
+        // 3. Merge Data
+        let updatedStocks = [...currentStocks];
         
-        // If marketData is STILL empty (very first run ever), initialize it with placeholders
         if (updatedStocks.length === 0) {
              updatedStocks = STOCK_SYMBOLS.map(s => ({ symbol: s, name: s, price: 0, change: 0 }));
         }
 
-        // Update the specific stocks in the array
         results.forEach(newStock => {
             const index = updatedStocks.findIndex(s => s.symbol === newStock.symbol);
             if (index !== -1) {
@@ -260,27 +348,26 @@ async function refreshMarketData(isAuto = false) {
             }
         });
 
-        // Save to Firestore
-        const marketRef = doc(db, "system", "market");
+        // 4. Calculate Next Batch Index
+        let newNextBatch = currentBatchIndex + 1;
+        if (newNextBatch * BATCH_SIZE >= STOCK_SYMBOLS.length) {
+            newNextBatch = 0;
+        }
+
+        // 5. Save to Firestore (Atomic Update for everyone)
         await setDoc(marketRef, {
             stocks: updatedStocks,
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
+            nextBatchIndex: newNextBatch
         });
 
         if (!isAuto) alert("Market data updated successfully!");
-        
-        // Prepare next batch index
-        currentBatchIndex++;
-        if (currentBatchIndex * BATCH_SIZE >= STOCK_SYMBOLS.length) {
-            currentBatchIndex = 0;
-        }
-        localStorage.setItem('marketBatchIndex', currentBatchIndex);
 
     } catch (error) {
         console.error("Error fetching market data:", error);
         if (!isAuto) alert("Failed to update market data. Check console.");
     } finally {
-        if (!isAuto) {
+        if (!isAuto && refreshBtn) {
             refreshBtn.disabled = false;
             refreshBtn.textContent = "Manual Refresh";
         }
@@ -288,17 +375,7 @@ async function refreshMarketData(isAuto = false) {
 }
 
 function toggleAutoRefresh(enabled) {
-    localStorage.setItem('marketAutoRefresh', enabled);
-    if (enabled) {
-        // Run immediately then interval
-        refreshMarketData(true);
-        autoRefreshInterval = setInterval(() => refreshMarketData(true), REFRESH_RATE_MS);
-        console.log("Auto-Refresh Started");
-    } else {
-        clearInterval(autoRefreshInterval);
-        autoRefreshInterval = null;
-        console.log("Auto-Refresh Stopped");
-    }
+   // Deprecated: Logic moved to "Community Maintenance"
 }
 
 
@@ -313,6 +390,9 @@ function openTradeModal(symbol) {
     document.getElementById("modal-stock-name").textContent = selectedStock.name;
     document.getElementById("modal-current-price").textContent = formatCurrency(selectedStock.price);
     document.getElementById("modal-user-cash").textContent = formatCurrency(userData.balance);
+    
+    // Reset button state
+    confirmTradeBtn.disabled = false;
     
     document.querySelector('[data-type="buy"]').click();
     shareInput.value = 1;
@@ -336,10 +416,44 @@ function updateTradeTotal() {
 async function executeTrade() {
     if (!currentUser || !selectedStock) return;
     
+    // Disable button to prevent double-clicks
+    confirmTradeBtn.disabled = true;
+    confirmTradeBtn.textContent = "Verifying Price...";
+
     const shares = parseInt(shareInput.value);
-    if (shares <= 0) {
+    if (shares <= 0 || isNaN(shares)) {
         alert("Please enter a valid number of shares.");
+        confirmTradeBtn.disabled = false;
+        confirmTradeBtn.textContent = `Confirm ${tradeType === 'buy' ? 'Buy' : 'Sell'}`;
         return;
+    }
+
+    // 1. Fetch Authoritative Price from Firestore (instead of API)
+    try {
+        const marketRef = doc(db, "system", "market");
+        const marketSnap = await getDoc(marketRef);
+        
+        if (marketSnap.exists()) {
+            const systemStocks = marketSnap.data().stocks || [];
+            const freshStockData = systemStocks.find(s => s.symbol === selectedStock.symbol);
+            
+            if (freshStockData) {
+                // Update local selected stock with authoritative data
+                selectedStock.price = freshStockData.price;
+                selectedStock.change = freshStockData.change;
+                
+                // Update local marketData array to stay in sync
+                const stockIndex = marketData.findIndex(s => s.symbol === selectedStock.symbol);
+                if (stockIndex !== -1) {
+                    marketData[stockIndex] = freshStockData;
+                }
+            } else {
+                console.warn("Stock not found in system record, using local cached price.");
+            }
+        }
+    } catch (err) {
+        console.error("Error fetching system price, using cached:", err);
+        // Continue with cached price if fetch fails
     }
 
     const subtotal = shares * selectedStock.price;
@@ -349,7 +463,9 @@ async function executeTrade() {
     try {
         if (tradeType === "buy") {
             if (userData.balance < totalCost) {
-                alert("Insufficient funds!");
+                alert(`Insufficient funds! Price is now $${selectedStock.price.toFixed(2)}.`);
+                confirmTradeBtn.disabled = false;
+                confirmTradeBtn.textContent = `Confirm ${tradeType === 'buy' ? 'Buy' : 'Sell'}`;
                 return;
             }
 
@@ -365,12 +481,14 @@ async function executeTrade() {
             // Record Transaction
             await recordTransaction(tradeType, selectedStock.symbol, shares, selectedStock.price, totalCost);
 
-            alert(`Successfully bought ${shares} shares of ${selectedStock.symbol} for ${formatCurrency(totalCost)} (incl. $2.00 fee)`);
+            alert(`Successfully bought ${shares} shares of ${selectedStock.symbol} at $${selectedStock.price.toFixed(2)} for total ${formatCurrency(totalCost)}`);
 
         } else { // Sell
             const currentShares = userData.portfolio[selectedStock.symbol] || 0;
             if (currentShares < shares) {
                 alert("You don't have enough shares to sell!");
+                confirmTradeBtn.disabled = false;
+                confirmTradeBtn.textContent = `Confirm ${tradeType === 'buy' ? 'Buy' : 'Sell'}`;
                 return;
             }
 
@@ -394,7 +512,7 @@ async function executeTrade() {
             // Record Transaction
             await recordTransaction(tradeType, selectedStock.symbol, shares, selectedStock.price, proceeds);
             
-            alert(`Successfully sold ${shares} shares of ${selectedStock.symbol} for ${formatCurrency(proceeds)} (after $2.00 fee)`);
+            alert(`Successfully sold ${shares} shares of ${selectedStock.symbol} at $${selectedStock.price.toFixed(2)} for ${formatCurrency(proceeds)}`);
         }
 
         // --- Loot Drop Logic ---
@@ -415,6 +533,8 @@ async function executeTrade() {
     } catch (error) {
         console.error("Trade failed:", error);
         alert("Trade failed: " + error.message);
+        confirmTradeBtn.disabled = false;
+        confirmTradeBtn.textContent = `Confirm ${tradeType === 'buy' ? 'Buy' : 'Sell'}`;
     }
 }
 
@@ -458,7 +578,7 @@ function setupEventListeners() {
 
     shareInput.addEventListener("input", updateTradeTotal);
     confirmTradeBtn.addEventListener("click", executeTrade);
-    refreshBtn.addEventListener("click", () => refreshMarketData(false));
+    if (refreshBtn) refreshBtn.addEventListener("click", () => refreshMarketData(false));
     
     if (autoRefreshToggle) {
         autoRefreshToggle.addEventListener("change", (e) => toggleAutoRefresh(e.target.checked));
@@ -496,7 +616,69 @@ function setupEventListeners() {
 
 let performanceChart = null;
 
+function calculatePerformance(data) {
+    const transactions = data.transactions || [];
+    const portfolio = data.portfolio || {};
+
+    let totalInvested = 0; // Cash Outflow (Buys + Fees)
+    let totalReturned = 0; // Cash Inflow (Sells)
+
+    transactions.forEach(t => {
+        // Assuming t.total is always positive cost/proceeds
+        if (t.type === 'buy') {
+            totalInvested += t.total;
+        } else if (t.type === 'sell') {
+            totalReturned += t.total;
+        }
+    });
+
+    // Current Portfolio Value
+    let currentPortfolioValue = 0;
+    Object.entries(portfolio).forEach(([symbol, shares]) => {
+        const stock = marketData.find(s => s.symbol === symbol);
+        if (stock) {
+            currentPortfolioValue += stock.price * shares;
+        }
+    });
+
+    const totalEquity = totalReturned + currentPortfolioValue;
+    const netProfit = totalEquity - totalInvested;
+    
+    // ROI %
+    // If user never invested, ROI is 0.
+    const roi = totalInvested > 0 ? (netProfit / totalInvested) * 100 : 0;
+
+    return {
+        invested: totalInvested,
+        returned: totalReturned,
+        currentValue: currentPortfolioValue,
+        profit: netProfit,
+        roi: roi
+    };
+}
+
 function loadUserStatistics() {
+    if (!userData) return; 
+
+    // 0. Update Summary Stats
+    const perf = calculatePerformance(userData);
+    
+    const investedEl = document.getElementById("stats-total-invested");
+    const profitEl = document.getElementById("stats-total-profit");
+    const roiEl = document.getElementById("stats-roi");
+
+    if(investedEl) investedEl.textContent = formatCurrency(perf.invested);
+    
+    if(profitEl) {
+        profitEl.textContent = (perf.profit >= 0 ? "+" : "") + formatCurrency(perf.profit);
+        profitEl.className = "stat-value " + (perf.profit >= 0 ? "price-up" : "price-down");
+    }
+    
+    if(roiEl) {
+        roiEl.textContent = (perf.roi >= 0 ? "+" : "") + perf.roi.toFixed(2) + "%";
+        roiEl.className = "stat-value " + (perf.roi >= 0 ? "price-up" : "price-down");
+    }
+
     // 1. Render Transaction History
     const historyBody = document.getElementById("transaction-history-list");
     const noTransMsg = document.getElementById("no-transactions-msg");
@@ -610,35 +792,31 @@ async function loadLeaderboard() {
 
         usersSnapshot.forEach(doc => {
             const data = doc.data();
-            // Calculate Portfolio Value
-            let portfolioValue = 0;
-            if (data.portfolio) {
-                for (const [symbol, shares] of Object.entries(data.portfolio)) {
-                    const stock = marketData.find(s => s.symbol === symbol);
-                    if (stock) {
-                        portfolioValue += shares * stock.price;
-                    }
-                }
-            }
-            
+            const perf = calculatePerformance(data);
+             
             leaders.push({
                 name: data.nickname || "Anonymous Trader",
-                netWorth: (data.balance || 0) + portfolioValue,
-                portfolioSize: Object.keys(data.portfolio || {}).length
+                roi: perf.roi,
+                profit: perf.profit
             });
         });
 
-        // Sort by Net Worth (High to Low)
-        leaders.sort((a, b) => b.netWorth - a.netWorth);
+        // Sort by ROI (High to Low)
+        leaders.sort((a, b) => b.roi - a.roi);
 
-        tbody.innerHTML = leaders.map((leader, index) => `
+        tbody.innerHTML = leaders.map((leader, index) => {
+            const roiClass = leader.roi >= 0 ? "price-up" : "price-down";
+            const profitClass = leader.profit >= 0 ? "price-up" : "price-down";
+            const roiSign = leader.roi >= 0 ? "+" : "";
+            
+            return `
             <tr>
                 <td><span class="rank-badge rank-${index + 1}">${index + 1}</span></td>
                 <td>${leader.name}</td>
-                <td style="font-weight:bold; color:var(--primary-color);">${formatCurrency(leader.netWorth)}</td>
-                <td>${leader.portfolioSize} Stocks</td>
+                <td class="${roiClass}" style="font-weight:bold;">${roiSign}${leader.roi.toFixed(2)}%</td>
+                <td class="${profitClass}">${formatCurrency(leader.profit)}</td>
             </tr>
-        `).join('');
+        `}).join('');
 
     } catch (error) {
         console.error("Error loading leaderboard:", error);

@@ -52,6 +52,7 @@ nav ul {
     display: flex;
     list-style: none;
     gap: 2rem;
+    align-items: center;
 }
 
 nav a {
@@ -1559,15 +1560,24 @@ input:checked + .slider:before {
     text-align: center;
 }
 
+.total-cost {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin: 1rem 0;
+}
+
 .cost-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.5rem;
+    width: 100%;
 }
 
 .total-row {
     font-weight: bold;
-    border-top: 1px solid #eee;
+    border-top: 1px solid rgba(255,255,255,0.1);
     padding-top: 0.5rem;
     margin-top: 0.5rem;
 }
