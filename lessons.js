@@ -234,9 +234,13 @@ async function completeLesson(lesson) {
                 throw "Already completed";
             }
 
+            // Apply XP Multiplier from Real Estate
+            const multiplier = data.xpMultiplier || 1.0;
+            const finalReward = Math.ceil(lesson.reward * multiplier);
+
             const updates = {
-                balance: (data.balance || 0) + lesson.reward,
-                netWorth: (data.netWorth || 0) + lesson.reward, // Update net worth too
+                balance: (data.balance || 0) + finalReward,
+                netWorth: (data.netWorth || 0) + finalReward, // Update net worth too
                 completedLessons: arrayUnion(lesson.id)
             };
 
@@ -249,7 +253,11 @@ async function completeLesson(lesson) {
         });
 
         // UI Success
-        els.mFeedback.textContent = `Correct! You earned $${lesson.reward}!${lootMessage}`;
+        const multiplier = userData.xpMultiplier || 1.0;
+        const finalReward = Math.ceil(lesson.reward * multiplier);
+        const bonusText = multiplier > 1.0 ? ` (incl. ${((multiplier-1)*100).toFixed(0)}% Bonus)` : "";
+
+        els.mFeedback.textContent = `Correct! You earned $${finalReward}${bonusText}!${lootMessage}`;
         els.mFeedback.classList.remove('error');
         els.mFeedback.classList.add('success');
         els.mFeedback.style.display = 'block';

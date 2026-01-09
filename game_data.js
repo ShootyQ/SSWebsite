@@ -152,3 +152,23 @@ export function generateLoot(forceRarity = null, source = 'drop') {
         value: Math.floor(baseItem.price * RARITIES[rarity].multiplier)
     };
 }
+
+export const BUILDINGS = {
+    // Residential (XP Buffs & Profile Themes)
+    'res_tent': { name: 'Tent', type: 'residential', cost: 100, xpMult: 0.05, icon: '⛺', desc: "Better than sleeping on the ground.", slots: 4, theme: 'theme-tent' },
+    'res_shack': { name: 'Wooden Shack', type: 'residential', cost: 500, xpMult: 0.10, icon: '🏚️', desc: "It has a roof!", slots: 6, theme: 'theme-shack' },
+    'res_cabin': { name: 'Log Cabin', type: 'residential', cost: 1500, xpMult: 0.15, icon: '🛖', desc: "Rustic living in the woods.", slots: 8, theme: 'theme-cabin' },
+    'res_house': { name: 'Brick House', type: 'residential', cost: 2500, xpMult: 0.25, icon: '🏡', desc: "Solid and cozy.", slots: 12, theme: 'theme-house' },
+    'res_villa': { name: 'Modern Villa', type: 'residential', cost: 5000, xpMult: 0.35, icon: '🏘️', desc: "Stylish and spacious.", slots: 16, theme: 'theme-villa' },
+    'res_mansion': { name: 'Neon Mansion', type: 'residential', cost: 10000, xpMult: 0.50, icon: '🏰', desc: "The envy of the neighborhood.", slots: 24, theme: 'theme-mansion' },
+    'res_palace': { name: 'Crystal Palace', type: 'residential', cost: 50000, xpMult: 1.00, icon: '🏯', desc: "Fit for a king or queen.", slots: 32, theme: 'theme-palace' },
+
+    // Commercial (Income)
+    'com_stand': { name: 'Lemonade Stand', type: 'commercial', cost: 200, income: 10, visitFee: 2, icon: '🍋', desc: "Fresh squeezed profits." },
+    'com_store': { name: 'Corner Store', type: 'commercial', cost: 1000, income: 50, visitFee: 10, icon: '🏪', desc: "Snacks for everyone." },
+    'com_cafe': { name: 'Cyber Cafe', type: 'commercial', cost: 2500, income: 100, visitFee: 25, icon: '☕', desc: "Coffee and high-speed net." },
+    'com_arcade': { name: 'Cyber Arcade', type: 'commercial', cost: 5000, income: 200, visitFee: 50, icon: '🕹️', desc: "High scores, high profits." },
+    'com_cinema': { name: 'Holo-Cinema', type: 'commercial', cost: 10000, income: 500, visitFee: 100, icon: '🍿', desc: "The future of entertainment." },
+    'com_tower': { name: 'Tech Tower', type: 'commercial', cost: 20000, income: 1000, visitFee: 200, icon: '🏢', desc: "Corporate domination." },
+    'com_stadium': { name: 'Mega Stadium', type: 'commercial', cost: 100000, income: 5000, visitFee: 1000, icon: '🏟️', desc: "Massive events, massive cash." }
+};

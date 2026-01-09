@@ -6,6 +6,9 @@
     --bg-color: #f4f7f6;
     --white: #ffffff;
     --header-height: 70px;
+    --neon-blue: #00f3ff;
+    --neon-purple: #bc13fe;
+    --neon-green: #0aff0a;
 }
 
 * {
@@ -28,17 +31,21 @@ body {
     align-items: center;
     padding: 0 2rem;
     height: var(--header-height);
-    background-color: var(--white);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background-color: #0a0a12; /* Dark Theme Background */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     position: sticky;
     top: 0;
     z-index: 1000;
+    backdrop-filter: blur(10px);
 }
 
 .logo h1 {
     font-size: 1.5rem;
-    color: var(--primary-color);
+    color: #fff;
     font-weight: 700;
+    text-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
+    letter-spacing: 1px;
 }
 
 nav ul {
@@ -49,14 +56,34 @@ nav ul {
 
 nav a {
     text-decoration: none;
-    color: var(--text-color);
+    color: #a0a0a0;
     font-weight: 600;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    padding: 5px 0;
 }
 
 nav a:hover,
 nav a.active {
-    color: var(--primary-color);
+    color: #00f3ff; /* Neon Blue */
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+nav a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #00f3ff;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.8);
+}
+
+nav a:hover::after,
+nav a.active::after {
+    width: 100%;
 }
 
 /* Buttons */
@@ -1789,6 +1816,207 @@ input:checked + .slider:before {
 .catalog-item .name {
     font-size: 0.8rem;
     font-weight: 600;
+}
+
+/* --- Profile Home Themes --- */
+/* Base transition for smooth switching */
+.profile-container-v2 {
+    transition: all 0.5s ease;
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Tent: Canvas, Camping, Nature */
+.theme-tent {
+    background-color: #d4c5a3;
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23bfae85' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+    border: 8px solid #5d4037;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
+}
+.theme-tent .glass-panel {
+    background: rgba(245, 245, 220, 0.9);
+    border: 2px dashed #8b4513;
+    border-radius: 4px;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+    color: #4e342e;
+}
+.theme-tent .section-icon {
+    text-shadow: none;
+    filter: sepia(1) hue-rotate(-50deg) saturate(2);
+}
+.theme-tent .btn-glow {
+    background: #8b4513;
+    border: none;
+    box-shadow: 2px 2px 0 #5d4037;
+}
+.theme-tent .money-text { color: #2e7d32; text-shadow: none; font-weight: 800; }
+
+
+/* Shack: Rough Wood, Scrappy */
+.theme-shack {
+    background-color: #5d4037;
+    background-image: repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(0,0,0,0.2) 50px, rgba(0,0,0,0.2) 53px),
+                      repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(0,0,0,0.1) 50px, rgba(0,0,0,0.1) 53px);
+    border: 6px solid #3e2723;
+}
+.theme-shack .glass-panel {
+    background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0z' fill='%238d6e63' fill-opacity='0.8'/%3E%3C/svg%3E");
+    border: 4px solid #4e342e;
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
+}
+.theme-shack .section-header h3 {
+    font-family: 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+
+/* Cabin: Cozy, Warm, Log Cabin */
+.theme-cabin {
+    background: #3e2723;
+    background: radial-gradient(circle at center, #5d4037 0%, #3e2723 100%);
+    border: 10px solid #281812;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+}
+.theme-cabin .glass-panel {
+    background: rgba(62, 39, 35, 0.8);
+    border: 2px solid #a1887f;
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    color: #efebe9;
+}
+.theme-cabin .section-icon {
+    filter: drop-shadow(0 0 5px #ffcc80);
+}
+.theme-cabin .money-text { color: #ffcc80; text-shadow: 0 0 10px #ff6f00; }
+
+
+/* House: Clean, Brick, Suburban */
+.theme-house {
+    background-color: #f5f5f5;
+    background-image: 
+        linear-gradient(335deg, rgba(0,0,0,0.05) 23px, transparent 23px),
+        linear-gradient(155deg, rgba(0,0,0,0.05) 23px, transparent 23px),
+        linear-gradient(335deg, rgba(0,0,0,0.05) 23px, transparent 23px),
+        linear-gradient(155deg, rgba(0,0,0,0.05) 23px, transparent 23px);
+    background-size: 58px 58px;
+    background-position: 0px 2px, 4px 35px, 29px 31px, 34px 6px;
+    border: 8px solid #fff;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+.theme-house .glass-panel {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    color: #333;
+}
+.theme-house .section-icon {
+    text-shadow: none;
+    -webkit-text-fill-color: initial;
+    color: #1976d2;
+}
+.theme-house .money-text { color: #2e7d32; text-shadow: none; }
+.theme-house .btn-glow {
+    background: #1976d2;
+    color: white;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.theme-house .btn-glow:hover {
+    background: #1565c0;
+    transform: translateY(-1px);
+}
+
+
+/* Villa: Modern, Glass, Pool, Luxury */
+.theme-villa {
+    background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+}
+.theme-villa .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    color: #2c3e50;
+}
+.theme-villa .section-icon {
+    text-shadow: none;
+    -webkit-text-fill-color: initial;
+    background: linear-gradient(45deg, #8ec5fc, #e0c3fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.theme-villa .money-text { color: #2980b9; text-shadow: none; }
+
+
+/* Mansion: Cyberpunk, Neon, Dark, Elite */
+.theme-mansion {
+    background: #050505;
+    background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    border: 2px solid #00f3ff;
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.3), inset 0 0 50px rgba(0,0,0,0.8);
+}
+.theme-mansion .glass-panel {
+    background: rgba(10, 10, 18, 0.8);
+    border: 1px solid rgba(0, 243, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+    color: #fff;
+}
+.theme-mansion .section-header h3 {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+.theme-mansion .money-text { color: #00f3ff; text-shadow: 0 0 10px #00f3ff; }
+
+
+/* Palace: Gold, Royal, Opulent */
+.theme-palace {
+    background: radial-gradient(circle, #4a0000 0%, #2a0000 100%); /* Royal Red/Black */
+    border: 8px double #ffd700;
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+}
+.theme-palace::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffd700' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+}
+.theme-palace .glass-panel {
+    background: rgba(40, 0, 0, 0.8);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    color: #ffd700;
+}
+.theme-palace .section-header h3 {
+    font-family: 'Times New Roman', Times, serif;
+    font-style: italic;
+    letter-spacing: 1px;
+    background: linear-gradient(to bottom, #ffd700, #bf953f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+.theme-palace .money-text { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+.theme-palace .btn-glow {
+    background: linear-gradient(to bottom, #ffd700, #bf953f);
+    color: #2a0000;
+    border: 1px solid #fff;
+    font-weight: 900;
 }
 
 

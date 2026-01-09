@@ -3,56 +3,375 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate - SS Explorer</title>
+    <title>Neon City Real Estate - SS Explorer</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- Neon City Specific Styles --- */
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-green: #0aff0a;
+            --neon-red: #ff0055;
+            --dark-bg: #0a0a12;
+            --grid-line: rgba(255, 255, 255, 0.05);
+            --hex-size: 60px; /* Size of the hexagon */
+            --hex-gap: 4px;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Background Grid Effect */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            opacity: 0.3;
+        }
+
+        /* Layout */
+        .city-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: calc(100vh - 70px); /* Subtract header height */
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .city-sidebar {
+            background: rgba(10, 10, 18, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .stat-row:last-child { margin-bottom: 0; }
+        .stat-val { font-weight: 700; }
+        .money { color: #4ade80; text-shadow: 0 0 5px rgba(74, 222, 128, 0.3); }
+        .xp { color: var(--neon-purple); }
+
+        /* Selected Plot Info */
+        .plot-info-card {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid var(--neon-blue);
+            border-radius: 12px;
+            padding: 1rem;
+            display: none; /* Hidden until plot selected */
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .plot-coords {
+            font-family: monospace;
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .plot-owner {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            color: #fff;
+        }
+
+        .plot-building {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-buy {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+        .btn-buy:hover { transform: scale(1.02); box-shadow: 0 0 25px rgba(0, 243, 255, 0.5); }
+
+        .btn-build {
+            background: var(--neon-purple);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+        }
+
+        .btn-visit {
+            background: var(--neon-green);
+            color: #000;
+        }
+
+        /* Map Area */
+        .map-viewport {
+            position: relative;
+            overflow: hidden; /* Pan/Zoom container */
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+            cursor: grab;
+        }
+
+        .map-viewport:active { cursor: grabbing; }
+
+        .hex-grid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Grid layout logic handled in JS */
+            display: flex;
+            flex-wrap: wrap;
+            width: 2000px; /* Large canvas */
+            justify-content: center;
+        }
+
+        /* Hexagon CSS */
+        .hex {
+            width: var(--hex-size);
+            height: calc(var(--hex-size) * 1.1547); /* hex height ratio */
+            background-color: rgba(255, 255, 255, 0.05);
+            margin: calc(var(--hex-gap) / 2);
+            position: relative;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* Hex Rows Staggering */
+        .hex-row {
+            display: flex;
+            margin-bottom: calc(var(--hex-size) * -0.28); /* Overlap for honeycomb */
+        }
+        
+        .hex-row:nth-child(even) {
+            margin-left: calc(var(--hex-size) * 0.5 + var(--hex-gap) / 2);
+        }
+
+        .hex:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+            z-index: 2;
+        }
+
+        /* Hex States */
+        .hex.owned-by-me {
+            background-color: rgba(0, 243, 255, 0.3);
+            border: 2px solid var(--neon-blue); /* Border doesn't work well with clip-path, use inset shadow or pseudo */
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        .hex.owned-by-others {
+            background-color: rgba(188, 19, 254, 0.3);
+            box-shadow: inset 0 0 20px rgba(188, 19, 254, 0.5);
+        }
+
+        .hex.for-sale:hover {
+            background-color: rgba(10, 255, 10, 0.2);
+        }
+
+        .hex-content {
+            pointer-events: none;
+            z-index: 1;
+            text-align: center;
+        }
+        
+        .hex-icon {
+            font-size: 1.2rem;
+            display: block;
+        }
+        
+        .hex-level {
+            font-size: 0.6rem;
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Build Modal */
+        .modal-content {
+            background: #1a1a2e;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+            color: #fff;
+            max-width: 900px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-content h2 {
+            color: var(--neon-blue);
+            position: sticky;
+            top: 0;
+            background: #1a1a2e;
+            padding-bottom: 1rem;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-top: 0;
+        }
+
+        #building-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .building-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .building-option:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--neon-blue);
+        }
+        .building-icon { font-size: 2rem; }
+        .building-details h4 { margin: 0; color: #fff; }
+        .building-details p { margin: 0; font-size: 0.8rem; color: #aaa; }
+        .building-cost { margin-left: auto; font-weight: bold; color: #4ade80; }
+
+    </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
+    <div class="bg-grid"></div>
+
+    <div class="city-container">
+        <!-- Sidebar Controls -->
+        <aside class="city-sidebar">
+            <div class="sidebar-header">
+                <h2>Neon City</h2>
+                <p style="color: #888; font-size: 0.9rem;">Real Estate Market</p>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat-row">
+                    <span>Your Cash</span>
+                    <span id="user-cash" class="stat-val money">$0.00</span>
+                </div>
+                <div class="stat-row">
+                    <span>Daily Income</span>
+                    <span id="user-income" class="stat-val money">+$0.00</span>
+                </div>
+                <div class="stat-row">
+                    <span>XP Multiplier</span>
+                    <span id="user-xp" class="stat-val xp">1.0x</span>
+                </div>
+            </div>
+
+            <!-- Selected Plot Details -->
+            <div id="plot-details" class="plot-info-card">
+                <div class="plot-coords">COORDS: <span id="selected-coords">0,0</span></div>
+                <h3 id="selected-owner" class="plot-owner">Unclaimed Land</h3>
+                <span id="selected-building" class="plot-building">Wilderness</span>
+                
+                <div id="plot-actions">
+                    <!-- Buttons injected via JS -->
+                    <button class="action-btn btn-buy">Buy Land ($500)</button>
+                </div>
+            </div>
+
+            <div class="leaderboard-mini">
+                <h4 style="margin-bottom: 1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem;">Top Land Barons</h4>
+                <div id="leaderboard-list">
+                    <!-- Leaderboard items -->
+                    <p style="color: #666; font-style: italic;">Loading...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Interactive Map -->
+        <main class="map-viewport" id="map-viewport">
+            <div class="hex-grid" id="hex-grid">
+                <!-- Hexagons generated by JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Build Modal -->
+    <div id="build-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-build-modal">&times;</span>
+            <h2>Choose Construction</h2>
+            <p>What would you like to build on this plot?</p>
+            
+            <div id="building-options">
+                <!-- Options injected via JS -->
+            </div>
+        </div>
+    </div>
+
     <script src="components.js"></script>
-
-    <main class="container">
-        <div class="market-header">
-            <h2>🏘️ Real Estate Market</h2>
-            <div class="user-balance-display">
-                <span>Cash: <span id="user-cash" class="money-text">$0.00</span></span>
-                <span>Daily Income: <span id="user-income" class="money-text success">+$0.00</span></span>
-                <span>Daily Rent: <span id="user-rent" class="money-text error">-$0.00</span></span>
-            </div>
-        </div>
-
-        <div class="market-tabs">
-            <button class="tab-btn active" data-tab="housing">🏠 Housing (Live)</button>
-            <button class="tab-btn" data-tab="commercial">🏢 Commercial (Invest)</button>
-        </div>
-
-        <!-- Housing Tab -->
-        <div id="housing" class="tab-content active">
-            <div class="info-banner">
-                <p><strong>Why Rent?</strong> Better homes give you <strong>XP Multipliers</strong> on lessons!</p>
-                <p><strong>Why Buy?</strong> Stop paying daily rent forever!</p>
-            </div>
-            <div id="housing-grid" class="real-estate-grid">
-                <!-- Housing Cards Injected Here -->
-            </div>
-        </div>
-
-        <!-- Commercial Tab -->
-        <div id="commercial" class="tab-content">
-            <div class="info-banner">
-                <p><strong>Be the Landlord!</strong> Buy these properties to earn <strong>Passive Income</strong> every day you login.</p>
-            </div>
-            <div id="commercial-grid" class="real-estate-grid">
-                <!-- Commercial Cards Injected Here -->
-            </div>
-        </div>
-
-    </main>
-
-    <footer>
-        <p>&copy; 2025 Social Studies Explorer. All rights reserved.</p>
-    </footer>
-
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="realestate.js"></script>
 </body>

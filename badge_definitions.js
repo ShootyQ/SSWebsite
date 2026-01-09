@@ -70,5 +70,15 @@ export const BADGES = [
     { id: 'cash_king', title: 'Liquid', description: 'Have > $2,000 in Cash', icon: '💸', check: (u) => (u.balance || 0) >= 2000 },
     { id: 'all_in', title: 'All In', description: 'Have < $10 in Cash (and own stocks)', icon: '🎰', check: (u) => (u.balance || 0) < 10 && Object.keys(u.portfolio || {}).length > 0 },
     { id: 'sniper', title: 'Sniper', description: 'Buy exactly 1 share in a transaction', icon: '🎯', check: (u) => (u.transactions || []).some(t => t.type === 'buy' && t.shares === 1) },
-    { id: 'bulk_buyer', title: 'Wholesaler', description: 'Buy > 10 shares in one transaction', icon: '🚛', check: (u) => (u.transactions || []).some(t => t.type === 'buy' && t.shares > 10) }
+    { id: 'bulk_buyer', title: 'Wholesaler', description: 'Buy > 10 shares in one transaction', icon: '🚛', check: (u) => (u.transactions || []).some(t => t.type === 'buy' && t.shares > 10) },
+
+    // Real Estate (8)
+    { id: 'landlord', title: 'Landlord', description: 'Own your first plot of land', icon: '🚩', check: (u) => (u.realEstateStats?.plotsCount || 0) >= 1 },
+    { id: 'mogul', title: 'Real Estate Mogul', description: 'Own 5 plots of land', icon: '🏘️', check: (u) => (u.realEstateStats?.plotsCount || 0) >= 5 },
+    { id: 'empire', title: 'Empire Builder', description: 'Own 10 plots of land', icon: '🗺️', check: (u) => (u.realEstateStats?.plotsCount || 0) >= 10 },
+    { id: 'slumlord', title: 'Slumlord', description: 'Own 5 Tents or Shacks', icon: '⛺', check: (u) => (u.realEstateStats?.buildings || []).filter(b => ['res_tent', 'res_shack'].includes(b)).length >= 5 },
+    { id: 'high_society', title: 'High Society', description: 'Own a Mansion or Palace', icon: '🥂', check: (u) => (u.realEstateStats?.buildings || []).some(b => ['res_mansion', 'res_palace'].includes(b)) },
+    { id: 'commercial_giant', title: 'Commercial Giant', description: 'Own a Tech Tower or Stadium', icon: '🏢', check: (u) => (u.realEstateStats?.buildings || []).some(b => ['com_tower', 'com_stadium'].includes(b)) },
+    { id: 'passive_income', title: 'Passive Income', description: 'Daily Income > $500', icon: '📈', check: (u) => (u.dailyIncome || 0) >= 500 },
+    { id: 'property_tycoon', title: 'Property Tycoon', description: 'Real Estate Value > $50,000', icon: '🏰', check: (u) => (u.realEstateStats?.totalValue || 0) >= 50000 }
 ];

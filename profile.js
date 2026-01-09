@@ -2,7 +2,7 @@ import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { doc, getDoc, updateDoc, arrayUnion, increment, runTransaction, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BADGES } from "./badge_definitions.js";
-import { SHOP_ITEMS, RARITIES, SUFFIXES, generateLoot } from "./game_data.js";
+import { SHOP_ITEMS, RARITIES, SUFFIXES, generateLoot, BUILDINGS } from "./game_data.js";
 
 // Make generateLoot global for debugging if needed
 window.generateLoot = generateLoot;
@@ -22,6 +22,10 @@ const els = {
     funFact: document.getElementById('display-fun-fact'),
     eraTag: document.getElementById('display-era'),
     
+    // Home Selector
+    homeSelector: document.getElementById('home-selector'),
+    profileContainer: document.getElementById('profile-main-container'),
+
     // Buttons
     shopBtn: document.getElementById('open-shop-btn'),
     inventoryBtn: document.getElementById('open-inventory-btn'),
@@ -105,11 +109,11 @@ function renderProfile(data) {
     // Financials
     const cash = data.balance || 0;
     const netWorth = data.netWorth || cash;
-    els.cash.textContent = `$${cash.toLocaleString()}`;
-    els.netWorth.textContent = `$${netWorth.toLocaleString()}`;
+    els.cash.textContent = `$${cash.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    els.netWorth.textContent = `$${netWorth.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     
     // Update Shop Balance
-    if (els.shopBalance) els.shopBalance.textContent = `$${cash.toLocaleString()}`;
+    if (els.shopBalance) els.shopBalance.textContent = `$${cash.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
     // Badges
     els.badgeShelf.innerHTML = '';
@@ -145,6 +149,71 @@ function renderProfile(data) {
 
     // Render Collection (My Room)
     renderCollectionPreview(data.equipped ? (data.equipped.decorations || []) : []);
+
+    // Home Selector Logic
+    updateHomeSelector(data);
+}
+
+function updateHomeSelector(data) {
+    const selector = els.homeSelector;
+    if (!selector) return;
+
+    selector.innerHTML = '<option value="none">Homeless (Default)</option>';
+    
+    // Get owned residential buildings
+    const ownedBuildings = data.realEstateStats ? (data.realEstateStats.buildings || []) : [];
+    const uniqueBuildings = [...new Set(ownedBuildings)]; // Remove duplicates
+
+    uniqueBuildings.forEach(bId => {
+        const building = BUILDINGS[bId];
+        if (building && building.type === 'residential') {
+            const option = document.createElement('option');
+            option.value = bId;
+            option.textContent = `${building.name} (${building.slots} Slots)`;
+            selector.appendChild(option);
+        }
+    });
+
+    // Set current selection
+    if (data.equipped && data.equipped.home) {
+        selector.value = data.equipped.home;
+        applyHomeTheme(data.equipped.home);
+    } else {
+        selector.value = "none";
+        applyHomeTheme("none");
+    }
+
+    // Add event listener if not already added (simple check)
+    selector.onchange = async (e) => {
+        const newHome = e.target.value;
+        applyHomeTheme(newHome);
+        
+        // Save to DB
+        try {
+            await updateDoc(currentUserRef, {
+                "equipped.home": newHome
+            });
+            // Reload profile to update slots
+            await loadUserProfile();
+        } catch (err) {
+            console.error("Error saving home:", err);
+        }
+    };
+}
+
+function applyHomeTheme(homeId) {
+    const container = els.profileContainer;
+    if (!container) return;
+
+    // Remove old themes
+    container.classList.remove('theme-tent', 'theme-shack', 'theme-cabin', 'theme-house', 'theme-villa', 'theme-mansion', 'theme-palace');
+    
+    if (homeId && homeId !== 'none') {
+        const building = BUILDINGS[homeId];
+        if (building && building.theme) {
+            container.classList.add(building.theme);
+        }
+    }
 }
 
 function renderCollectionPreview(equippedDecorations) {
@@ -152,8 +221,13 @@ function renderCollectionPreview(equippedDecorations) {
     if (!container) return;
     
     container.innerHTML = '';
-    // Show up to 6 items
-    const maxSlots = 6;
+    
+    // Determine Max Slots based on Equipped Home
+    let maxSlots = 4; // Default
+    if (currentUserData && currentUserData.equipped && currentUserData.equipped.home && currentUserData.equipped.home !== 'none') {
+        const home = BUILDINGS[currentUserData.equipped.home];
+        if (home) maxSlots = home.slots;
+    }
     
     equippedDecorations.forEach(itemId => {
         let item = SHOP_ITEMS.find(i => i.id === itemId);

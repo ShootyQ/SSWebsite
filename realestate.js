@@ -1,46 +1,57 @@
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, getDoc, updateDoc, arrayUnion, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, getDoc, updateDoc, arrayUnion, increment, runTransaction, collection, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { BUILDINGS } from "./game_data.js";
 
-// --- Definitions ---
-const HOUSING = [
-    { id: 'h_box', name: 'Cardboard Box', type: 'housing', rent: 0, price: 0, multiplier: 1.0, desc: "It's free, but it's soggy.", image: '📦' },
-    { id: 'h_tent', name: 'Backyard Tent', type: 'housing', rent: 10, price: 500, multiplier: 1.05, desc: "Fresh air! Watch out for bugs.", image: '⛺' },
-    { id: 'h_studio', name: 'Studio Apartment', type: 'housing', rent: 50, price: 5000, multiplier: 1.1, desc: "Cozy. Includes running water.", image: '🏢' },
-    { id: 'h_house', name: 'Suburban House', type: 'housing', rent: 150, price: 25000, multiplier: 1.25, desc: "White picket fence included.", image: '🏡' },
-    { id: 'h_mansion', name: 'Luxury Mansion', type: 'housing', rent: 500, price: 100000, multiplier: 1.5, desc: "Live like a king.", image: '🏰' },
-    { id: 'h_castle', name: 'Historic Castle', type: 'housing', rent: 2000, price: 1000000, multiplier: 2.0, desc: "Comes with a ghost.", image: '🏯' }
-];
+// --- Game Constants ---
+const GRID_SIZE = 8; // 8x8 Grid (64 plots total for now)
+const LAND_BASE_PRICE = 500;
+const PRICE_INCREMENT = 50; // Price goes up by $50 for every plot sold globally
 
-const COMMERCIAL = [
-    { id: 'c_lemonade', name: 'Lemonade Stand', type: 'commercial', price: 200, income: 10, desc: "Classic starter business.", image: '🍋' },
-    { id: 'c_vending', name: 'Vending Machine', type: 'commercial', price: 1000, income: 40, desc: "Passive income at its finest.", image: '🍫' },
-    { id: 'c_laundromat', name: 'Laundromat', type: 'commercial', price: 5000, income: 150, desc: "Everyone needs clean clothes.", image: '👕' },
-    { id: 'c_arcade', name: 'Retro Arcade', type: 'commercial', price: 15000, income: 400, desc: "Insert coin to play.", image: '🕹️' },
-    { id: 'c_cinema', name: 'Movie Theater', type: 'commercial', price: 50000, income: 1200, desc: "Popcorn sales are booming.", image: '🍿' },
-    { id: 'c_hotel', name: 'Grand Hotel', type: 'commercial', price: 250000, income: 5000, desc: "5-star service only.", image: '🏨' }
-];
+// --- State ---
+let currentUser = null;
+let userData = null;
+let allPlots = {}; // { "x_y": { ownerId, ownerName, buildingId, ... } }
+let selectedHex = null; // { x, y }
 
 // --- DOM Elements ---
 const els = {
-    housingGrid: document.getElementById('housing-grid'),
-    commercialGrid: document.getElementById('commercial-grid'),
+    grid: document.getElementById('hex-grid'),
+    viewport: document.getElementById('map-viewport'),
+    
+    // Sidebar
     userCash: document.getElementById('user-cash'),
     userIncome: document.getElementById('user-income'),
-    userRent: document.getElementById('user-rent'),
-    tabs: document.querySelectorAll('.tab-btn'),
-    contents: document.querySelectorAll('.tab-content')
+    userXp: document.getElementById('user-xp'),
+    
+    // Plot Details
+    plotCard: document.getElementById('plot-details'),
+    plotCoords: document.getElementById('selected-coords'),
+    plotOwner: document.getElementById('selected-owner'),
+    plotBuilding: document.getElementById('selected-building'),
+    plotActions: document.getElementById('plot-actions'),
+    
+    // Modal
+    buildModal: document.getElementById('build-modal'),
+    buildOptions: document.getElementById('building-options'),
+    closeBuild: document.getElementById('close-build-modal'),
+    
+    leaderboard: document.getElementById('leaderboard-list')
 };
 
-let currentUser = null;
-let userData = null;
-
-// --- Init ---
+// --- Initialization ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         await loadUserData();
-        renderAll();
+        initGrid();
+        subscribeToGrid(); // Real-time updates
+        
+        // Setup Modal Close
+        els.closeBuild.onclick = () => els.buildModal.style.display = "none";
+        window.onclick = (e) => {
+            if (e.target == els.buildModal) els.buildModal.style.display = "none";
+        };
     } else {
         window.location.href = "index.html";
     }
@@ -50,239 +61,405 @@ async function loadUserData() {
     const docSnap = await getDoc(doc(db, "users", currentUser.uid));
     if (docSnap.exists()) {
         userData = docSnap.data();
-        updateHeaderStats();
+        updateStatsUI();
     }
 }
 
-function updateHeaderStats() {
-    const cash = userData.balance || 0;
-    els.userCash.textContent = `$${cash.toLocaleString()}`;
+function updateStatsUI() {
+    if (!userData) return;
+    els.userCash.textContent = `$${(userData.balance || 0).toLocaleString()}`;
+    
+    // Calculate Income & XP from owned plots
+    let totalIncome = 0;
+    let totalXp = 1.0;
 
-    // Calculate Daily Stats
-    let dailyRent = 0;
-    if (userData.residence) {
-        const house = HOUSING.find(h => h.id === userData.residence.id);
-        // If they own it (isOwned flag), rent is 0. If they rent it, use rent price.
-        if (house && !userData.residence.isOwned) {
-            dailyRent = house.rent;
+    // We need to iterate our owned plots from the global state (once loaded)
+    // For now, just use what's in userData if we stored it there, but better to calculate from grid state
+    // to ensure sync. We'll update this inside renderGrid() or when allPlots updates.
+}
+
+// --- Grid System ---
+function initGrid() {
+    els.grid.innerHTML = '';
+    
+    // Create Hex Rows
+    for (let r = 0; r < GRID_SIZE; r++) {
+        const row = document.createElement('div');
+        row.className = 'hex-row';
+        
+        for (let q = 0; q < GRID_SIZE; q++) {
+            // Offset coordinates logic can be complex, let's stick to simple x,y grid for storage
+            // but render as staggered rows.
+            const hex = document.createElement('div');
+            hex.className = 'hex';
+            hex.dataset.x = q;
+            hex.dataset.y = r;
+            hex.onclick = () => selectPlot(q, r);
+            
+            // Inner content
+            const content = document.createElement('div');
+            content.className = 'hex-content';
+            hex.appendChild(content);
+            
+            row.appendChild(hex);
         }
+        els.grid.appendChild(row);
     }
-    els.userRent.textContent = `-$${dailyRent.toLocaleString()}`;
+    
+    // Enable Pan/Zoom (Basic Dragging)
+    let isDown = false;
+    let startX, startY, scrollLeft, scrollTop;
 
-    let dailyIncome = 0;
-    const properties = userData.properties || []; // Array of property IDs
-    properties.forEach(pid => {
-        const prop = COMMERCIAL.find(c => c.id === pid);
-        if (prop) dailyIncome += prop.income;
+    els.viewport.addEventListener('mousedown', (e) => {
+        isDown = true;
+        els.viewport.classList.add('active');
+        startX = e.pageX - els.viewport.offsetLeft;
+        startY = e.pageY - els.viewport.offsetTop;
+        scrollLeft = els.viewport.scrollLeft;
+        scrollTop = els.viewport.scrollTop;
     });
-    els.userIncome.textContent = `+$${dailyIncome.toLocaleString()}`;
+    els.viewport.addEventListener('mouseleave', () => { isDown = false; });
+    els.viewport.addEventListener('mouseup', () => { isDown = false; });
+    els.viewport.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - els.viewport.offsetLeft;
+        const y = e.pageY - els.viewport.offsetTop;
+        const walkX = (x - startX) * 1.5; // Scroll speed
+        const walkY = (y - startY) * 1.5;
+        els.viewport.scrollLeft = scrollLeft - walkX;
+        els.viewport.scrollTop = scrollTop - walkY;
+    });
+    
+    // Center the view initially
+    setTimeout(() => {
+        els.viewport.scrollLeft = (els.grid.offsetWidth - els.viewport.offsetWidth) / 2;
+        els.viewport.scrollTop = (els.grid.offsetHeight - els.viewport.offsetHeight) / 2;
+    }, 100);
 }
 
-// --- Rendering ---
-function renderAll() {
-    renderHousing();
-    renderCommercial();
-}
+// --- Real-time Data ---
+function subscribeToGrid() {
+    const q = collection(db, "land_plots");
+    onSnapshot(q, (snapshot) => {
+        allPlots = {};
+        let ownedPlotsCount = 0;
+        let myIncome = 0;
+        let myXp = 1.0;
+        let myPlotsCount = 0;
+        let myBuildings = [];
+        let myValue = 0;
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allPlots[doc.id] = data;
+            ownedPlotsCount++;
+            
+            if (data.ownerId === currentUser.uid) {
+                myPlotsCount++;
+                myValue += 500; // Base land value approximation
 
-function renderHousing() {
-    els.housingGrid.innerHTML = '';
-    const currentRes = userData.residence || { id: 'h_box', isOwned: false };
-
-    HOUSING.forEach(house => {
-        const isCurrent = currentRes.id === house.id;
-        const isOwned = isCurrent && currentRes.isOwned;
-        
-        const card = document.createElement('div');
-        card.className = `real-estate-card ${isCurrent ? 'active-home' : ''}`;
-        
-        let actionButtons = '';
-        
-        if (isCurrent) {
-            if (isOwned) {
-                actionButtons = `<button class="btn-disabled" disabled>Owned & Occupied</button>`;
-            } else {
-                if (house.price > 0) {
-                    actionButtons = `
-                        <button class="btn-disabled" disabled>Currently Renting</button>
-                        <button class="btn-buy" onclick="buyHouse('${house.id}')">Buy for $${house.price.toLocaleString()}</button>
-                    `;
-                } else {
-                    actionButtons = `<button class="btn-disabled" disabled>Current Home</button>`;
+                if (data.buildingId) {
+                    myBuildings.push(data.buildingId);
+                    const b = BUILDINGS[data.buildingId];
+                    if (b) {
+                        myValue += b.cost;
+                        if (b.type === 'commercial') myIncome += b.income;
+                        if (b.type === 'residential') myXp += b.xpMult;
+                    }
                 }
             }
-        } else {
-            // Not current home
-            if (house.rent > 0) {
-                actionButtons = `
-                    <button class="btn-rent" onclick="rentHouse('${house.id}')">Rent ($${house.rent}/day)</button>
-                    <button class="btn-buy" onclick="buyHouse('${house.id}')">Buy for $${house.price.toLocaleString()}</button>
-                `;
-            } else {
-                // Free box
-                actionButtons = `<button class="btn-rent" onclick="rentHouse('${house.id}')">Move In (Free)</button>`;
+        });
+        
+        // Update Global Stats
+        els.userIncome.textContent = `+$${myIncome.toLocaleString()}`;
+        els.userXp.textContent = `${myXp.toFixed(2)}x`;
+        
+        // Sync Stats to User Profile (for other pages to use)
+        if (userData) {
+            // Only update if changed significantly to avoid write loops
+            const currentMult = userData.xpMultiplier || 1.0;
+            const currentInc = userData.dailyIncome || 0;
+            const currentStats = userData.realEstateStats || { plotsCount: 0, totalValue: 0 };
+            
+            if (Math.abs(currentMult - myXp) > 0.01 || 
+                currentInc !== myIncome || 
+                currentStats.plotsCount !== myPlotsCount ||
+                currentStats.totalValue !== myValue) {
+                
+                updateDoc(doc(db, "users", currentUser.uid), {
+                    xpMultiplier: Number(myXp.toFixed(2)),
+                    dailyIncome: myIncome,
+                    realEstateStats: {
+                        plotsCount: myPlotsCount,
+                        buildings: myBuildings,
+                        totalValue: myValue
+                    }
+                }).then(() => {
+                    console.log("Stats synced to profile");
+                    userData.xpMultiplier = Number(myXp.toFixed(2));
+                    userData.dailyIncome = myIncome;
+                    userData.realEstateStats = {
+                        plotsCount: myPlotsCount,
+                        buildings: myBuildings,
+                        totalValue: myValue
+                    };
+                }).catch(e => console.error("Sync failed", e));
             }
         }
 
-        card.innerHTML = `
-            <div class="re-icon">${house.image}</div>
-            <div class="re-info">
-                <h3>${house.name}</h3>
-                <p class="re-desc">${house.desc}</p>
-                <div class="re-stats">
-                    <span class="stat-badge xp">XP x${house.multiplier}</span>
-                    ${house.rent > 0 ? `<span class="stat-badge rent">Rent: $${house.rent}/day</span>` : ''}
-                </div>
-            </div>
-            <div class="re-actions">
-                ${actionButtons}
-            </div>
-        `;
-        els.housingGrid.appendChild(card);
+        // Update Grid Visuals
+        renderGridData();
+        
+        // Update Leaderboard
+        updateLeaderboard(snapshot);
+        
+        // Refresh selected view if open
+        if (selectedHex) {
+            selectPlot(selectedHex.x, selectedHex.y);
+        }
     });
 }
 
-function renderCommercial() {
-    els.commercialGrid.innerHTML = '';
-    const ownedProps = userData.properties || [];
-
-    COMMERCIAL.forEach(prop => {
-        // Count how many of this type owned (if we allow multiples? Let's say unique for now for simplicity, or multiples allowed)
-        // Let's allow multiples for "Monopoly" feel!
-        const count = ownedProps.filter(id => id === prop.id).length;
-
-        const card = document.createElement('div');
-        card.className = 'real-estate-card commercial';
+function renderGridData() {
+    document.querySelectorAll('.hex').forEach(hex => {
+        const x = hex.dataset.x;
+        const y = hex.dataset.y;
+        const key = `${x}_${y}`;
+        const plot = allPlots[key];
+        const content = hex.querySelector('.hex-content');
         
-        card.innerHTML = `
-            <div class="re-icon">${prop.image}</div>
-            <div class="re-info">
-                <h3>${prop.name}</h3>
-                <p class="re-desc">${prop.desc}</p>
-                <div class="re-stats">
-                    <span class="stat-badge income">+$${prop.income}/day</span>
-                    <span class="stat-badge owned">Owned: ${count}</span>
-                </div>
-            </div>
-            <div class="re-actions">
-                <button class="btn-buy" onclick="buyCommercial('${prop.id}')">Buy ($${prop.price.toLocaleString()})</button>
-            </div>
-        `;
-        els.commercialGrid.appendChild(card);
+        // Reset classes
+        hex.className = 'hex';
+        content.innerHTML = '';
+        
+        if (plot) {
+            // Owned
+            if (plot.ownerId === currentUser.uid) {
+                hex.classList.add('owned-by-me');
+            } else {
+                hex.classList.add('owned-by-others');
+            }
+            
+            // Show Building Icon
+            if (plot.buildingId) {
+                const b = BUILDINGS[plot.buildingId];
+                if (b) {
+                    content.innerHTML = `<span class="hex-icon">${b.icon}</span>`;
+                }
+            } else {
+                // Just land
+                content.innerHTML = `<span class="hex-icon">🚩</span>`;
+            }
+        } else {
+            // For Sale
+            hex.classList.add('for-sale');
+            // content.innerHTML = `<span style="font-size:0.8rem; opacity:0.3;">$</span>`;
+        }
     });
+}
+
+function updateLeaderboard(snapshot) {
+    const owners = {};
+    snapshot.forEach(doc => {
+        const d = doc.data();
+        if (!owners[d.ownerId]) owners[d.ownerId] = { name: d.ownerName, count: 0, value: 0 };
+        owners[d.ownerId].count++;
+        // Simple value calc: Land Price + Building Cost
+        let val = LAND_BASE_PRICE; // Simplified, doesn't account for dynamic price paid
+        if (d.buildingId && BUILDINGS[d.buildingId]) val += BUILDINGS[d.buildingId].cost;
+        owners[d.ownerId].value += val;
+    });
+    
+    const sorted = Object.values(owners).sort((a, b) => b.value - a.value).slice(0, 5);
+    
+    els.leaderboard.innerHTML = sorted.map((p, i) => `
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.9rem;">
+            <span>${i+1}. ${p.name}</span>
+            <span style="color:#4ade80">$${p.value.toLocaleString()}</span>
+        </div>
+    `).join('');
+}
+
+// --- Interaction ---
+function selectPlot(x, y) {
+    selectedHex = { x, y };
+    const key = `${x}_${y}`;
+    const plot = allPlots[key];
+    
+    els.plotCard.style.display = 'block';
+    els.plotCoords.textContent = `${x}, ${y}`;
+    els.plotActions.innerHTML = ''; // Clear buttons
+    
+    if (plot) {
+        // Owned Plot
+        els.plotOwner.textContent = plot.ownerName;
+        
+        let buildingName = "Empty Lot";
+        if (plot.buildingId && BUILDINGS[plot.buildingId]) {
+            buildingName = BUILDINGS[plot.buildingId].name;
+        }
+        els.plotBuilding.textContent = buildingName;
+        
+        if (plot.ownerId === currentUser.uid) {
+            // My Plot
+            const buildBtn = document.createElement('button');
+            buildBtn.className = 'action-btn btn-build';
+            buildBtn.textContent = plot.buildingId ? "Replace Building" : "Construct Building";
+            buildBtn.onclick = () => openBuildMenu(key);
+            els.plotActions.appendChild(buildBtn);
+        } else {
+            // Someone else's plot
+            if (plot.buildingId) {
+                const b = BUILDINGS[plot.buildingId];
+                if (b.type === 'commercial') {
+                    const visitBtn = document.createElement('button');
+                    visitBtn.className = 'action-btn btn-visit';
+                    visitBtn.textContent = `Visit ${b.name} ($${b.visitFee})`;
+                    visitBtn.onclick = () => visitPlot(plot, b);
+                    els.plotActions.appendChild(visitBtn);
+                } else {
+                    els.plotActions.innerHTML = `<p style="color:#888; text-align:center;">Private Residence</p>`;
+                }
+            } else {
+                els.plotActions.innerHTML = `<p style="color:#888; text-align:center;">Undeveloped Land</p>`;
+            }
+        }
+        
+    } else {
+        // Unclaimed Plot
+        els.plotOwner.textContent = "Unclaimed Land";
+        els.plotBuilding.textContent = "Wilderness";
+        
+        // Calculate Dynamic Price
+        const totalSold = Object.keys(allPlots).length;
+        const currentPrice = LAND_BASE_PRICE + (totalSold * PRICE_INCREMENT);
+        
+        const buyBtn = document.createElement('button');
+        buyBtn.className = 'action-btn btn-buy';
+        buyBtn.textContent = `Buy Land ($${currentPrice.toLocaleString()})`;
+        buyBtn.onclick = () => buyLand(x, y, currentPrice);
+        els.plotActions.appendChild(buyBtn);
+    }
 }
 
 // --- Actions ---
-
-window.rentHouse = async (houseId) => {
-    const house = HOUSING.find(h => h.id === houseId);
-    if (!house) return;
-
-    if (!confirm(`Move into ${house.name}? Rent of $${house.rent} will be deducted daily.`)) return;
-
-    try {
-        await updateDoc(doc(db, "users", currentUser.uid), {
-            residence: {
-                id: house.id,
-                isOwned: false,
-                movedInAt: new Date().toISOString()
-            }
-        });
-        await loadUserData();
-        renderAll();
-        alert(`Moved into ${house.name}!`);
-    } catch (err) {
-        console.error(err);
-        alert("Error moving in.");
-    }
-};
-
-window.buyHouse = async (houseId) => {
-    const house = HOUSING.find(h => h.id === houseId);
-    if (!house) return;
-
-    if (userData.balance < house.price) {
+async function buyLand(x, y, price) {
+    if (userData.balance < price) {
         alert("Insufficient funds!");
         return;
     }
-
-    if (!confirm(`Buy ${house.name} for $${house.price.toLocaleString()}? You will no longer pay rent.`)) return;
-
+    
+    if (!confirm(`Purchase plot at ${x},${y} for $${price}?`)) return;
+    
+    const key = `${x}_${y}`;
+    const plotRef = doc(db, "land_plots", key);
+    const userRef = doc(db, "users", currentUser.uid);
+    
     try {
         await runTransaction(db, async (transaction) => {
-            const userRef = doc(db, "users", currentUser.uid);
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists()) throw "User error";
+            const pDoc = await transaction.get(plotRef);
+            if (pDoc.exists()) throw "Plot already taken!";
             
-            const data = userDoc.data();
-            if (data.balance < house.price) throw "Insufficient funds";
-
-            transaction.update(userRef, {
-                balance: data.balance - house.price,
-                residence: {
-                    id: house.id,
-                    isOwned: true, // Ownership flag
-                    boughtAt: new Date().toISOString()
-                }
+            const uDoc = await transaction.get(userRef);
+            if (uDoc.data().balance < price) throw "Insufficient funds!";
+            
+            transaction.update(userRef, { 
+                balance: increment(-price) 
+            });
+            
+            transaction.set(plotRef, {
+                ownerId: currentUser.uid,
+                ownerName: userData.nickname || "Anonymous",
+                purchasedAt: new Date().toISOString(),
+                pricePaid: price,
+                x: x,
+                y: y
             });
         });
         
-        await loadUserData();
-        renderAll();
-        alert(`Congratulations! You bought the ${house.name}!`);
-    } catch (err) {
-        console.error(err);
-        alert("Transaction failed: " + err);
-    }
-};
-
-window.buyCommercial = async (propId) => {
-    const prop = COMMERCIAL.find(c => c.id === propId);
-    if (!prop) return;
-
-    if (userData.balance < prop.price) {
-        alert("Insufficient funds!");
-        return;
-    }
-
-    if (!confirm(`Invest in ${prop.name} for $${prop.price.toLocaleString()}?`)) return;
-
-    try {
-        await runTransaction(db, async (transaction) => {
-            const userRef = doc(db, "users", currentUser.uid);
-            const userDoc = await transaction.get(userRef);
-            const data = userDoc.data();
-            
-            if (data.balance < prop.price) throw "Insufficient funds";
-
-            transaction.update(userRef, {
-                balance: data.balance - prop.price,
-                properties: arrayUnion(prop.id) // Allows duplicates? No, arrayUnion unique. 
-                // Wait, arrayUnion only adds unique. If we want multiples, we need a map or array with duplicates.
-                // Let's use a map { 'c_lemonade': 2 } or just a simple array update without arrayUnion for duplicates.
-            });
-            
-            // Since arrayUnion doesn't support duplicates, let's do a manual array push
-            const currentProps = data.properties || [];
-            currentProps.push(prop.id);
-            transaction.update(userRef, { properties: currentProps });
-        });
-
-        await loadUserData();
-        renderAll();
-        alert(`You acquired a ${prop.name}!`);
-    } catch (err) {
-        console.error(err);
-        alert("Transaction failed: " + err);
-    }
-};
-
-// --- Tabs ---
-els.tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        els.tabs.forEach(t => t.classList.remove('active'));
-        els.contents.forEach(c => c.classList.remove('active'));
+        // Local update will happen via snapshot listener
+        alert("Land purchased! Time to build.");
         
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.tab).classList.add('active');
+    } catch (e) {
+        console.error(e);
+        alert("Transaction failed: " + e);
+    }
+}
+
+function openBuildMenu(plotKey) {
+    els.buildModal.style.display = 'block';
+    els.buildOptions.innerHTML = '';
+    
+    Object.entries(BUILDINGS).forEach(([id, b]) => {
+        const div = document.createElement('div');
+        div.className = 'building-option';
+        div.innerHTML = `
+            <span class="building-icon">${b.icon}</span>
+            <div class="building-details">
+                <h4>${b.name}</h4>
+                <p>${b.desc}</p>
+                <p style="font-size:0.75rem; color:${b.type === 'commercial' ? '#4ade80' : '#bc13fe'}">
+                    ${b.type === 'commercial' ? `Income: $${b.income}/day` : `XP: +${(b.xpMult*100).toFixed(0)}%`}
+                </p>
+            </div>
+            <span class="building-cost">$${b.cost.toLocaleString()}</span>
+        `;
+        div.onclick = () => buildStructure(plotKey, id, b.cost);
+        els.buildOptions.appendChild(div);
     });
-});
+}
+
+async function buildStructure(plotKey, buildingId, cost) {
+    if (userData.balance < cost) {
+        alert("Too expensive!");
+        return;
+    }
+    
+    if (!confirm(`Construct this building for $${cost}?`)) return;
+    
+    try {
+        await runTransaction(db, async (transaction) => {
+            const userRef = doc(db, "users", currentUser.uid);
+            const plotRef = doc(db, "land_plots", plotKey);
+            
+            const uDoc = await transaction.get(userRef);
+            if (uDoc.data().balance < cost) throw "Insufficient funds!";
+            
+            transaction.update(userRef, { balance: increment(-cost) });
+            transaction.update(plotRef, { buildingId: buildingId });
+        });
+        
+        els.buildModal.style.display = 'none';
+        
+    } catch (e) {
+        alert("Build failed: " + e);
+    }
+}
+
+async function visitPlot(plot, building) {
+    if (userData.balance < building.visitFee) {
+        alert("You can't afford the entry fee!");
+        return;
+    }
+    
+    try {
+        await runTransaction(db, async (transaction) => {
+            const visitorRef = doc(db, "users", currentUser.uid);
+            const ownerRef = doc(db, "users", plot.ownerId);
+            
+            const vDoc = await transaction.get(visitorRef);
+            if (vDoc.data().balance < building.visitFee) throw "Insufficient funds!";
+            
+            // Transfer money
+            transaction.update(visitorRef, { balance: increment(-building.visitFee) });
+            transaction.update(ownerRef, { balance: increment(building.visitFee) });
+        });
+        
+        alert(`You visited ${plot.ownerName}'s ${building.name}!`);
+        // Here we could add a temporary buff effect
+        
+    } catch (e) {
+        alert("Visit failed: " + e);
+    }
+}

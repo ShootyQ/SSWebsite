@@ -5,76 +5,451 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - SS Explorer</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- Zinger Overrides (Inspired by Index) --- */
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-green: #0aff0a;
+            --dark-bg: #0a0a12;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated Background Blobs */
+        .blob {
+            position: fixed;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.4;
+            animation: float 15s infinite ease-in-out;
+            pointer-events: none;
+        }
+        .blob-1 {
+            top: -10%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: var(--neon-blue);
+            animation-delay: 0s;
+        }
+        .blob-2 {
+            bottom: -10%;
+            left: -10%;
+            width: 700px;
+            height: 700px;
+            background: var(--neon-purple);
+            animation-delay: 5s;
+        }
+        .blob-3 {
+            top: 40%;
+            left: 40%;
+            width: 400px;
+            height: 400px;
+            background: var(--neon-green);
+            animation-delay: 2s;
+            opacity: 0.2;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Layout Container */
+        .profile-container-v2 {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 900px) {
+            .profile-container-v2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glass Panels */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: var(--glass-highlight);
+            box-shadow: 0 12px 40px 0 rgba(0, 243, 255, 0.1);
+        }
+
+        /* Identity Section */
+        .identity-panel {
+            text-align: center;
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .avatar-glow {
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+            filter: blur(15px);
+            opacity: 0.7;
+            animation: spin 4s linear infinite;
+        }
+
+        .avatar-frame {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+            font-size: 4rem;
+            z-index: 2;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .profile-title-badge {
+            display: inline-block;
+            padding: 0.4rem 1.2rem;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            padding: 1rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #a0a0a0;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .money-text { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3); }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .btn-glow {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .btn-glow:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Dashboard Sections */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Trophy Case */
+        .badges-shelf {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            min-height: 100px;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            border-bottom: 4px solid rgba(255,255,255,0.1);
+        }
+
+        .empty-shelf-text {
+            width: 100%;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 2rem;
+        }
+
+        /* Room Grid */
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+
+        .decoration-slot {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.02);
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .decoration-slot:hover {
+            border-color: var(--neon-purple);
+            background: rgba(188, 19, 254, 0.05);
+        }
+
+        /* About Me */
+        .about-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border-left: 4px solid var(--neon-blue);
+        }
+
+        .era-tag {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.3rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        /* Modal Overrides for Dark Theme */
+        .modal-content {
+            background: #1a1a2e;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+            color: #fff;
+        }
+        
+        .modal-content h2 {
+            color: var(--neon-blue);
+        }
+
+        .form-group label {
+            color: #ccc;
+        }
+
+        input, select, textarea {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--neon-blue);
+            outline: none;
+        }
+
+        .emoji-option {
+            background: rgba(255,255,255,0.05);
+        }
+        .emoji-option:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .emoji-option.selected {
+            background: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+    </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
-    <script src="components.js"></script>
+    
+    <!-- Background Blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
 
-    <main class="profile-container-expanded" id="profile-main-container">
-        <!-- Background Layer -->
-        <div id="profile-background" class="profile-background default-bg"></div>
-
-        <div class="profile-dashboard">
-            <!-- Left Column: Identity -->
-            <div class="profile-sidebar-card">
-                <div class="profile-identity">
+    <main class="profile-container-v2" id="profile-main-container">
+        
+        <!-- Left Column: Identity -->
+        <aside>
+            <div class="glass-panel identity-panel">
+                <div class="avatar-container">
+                    <div class="avatar-glow"></div>
                     <div class="avatar-frame" id="avatar-frame">
-                        <span id="current-avatar" class="large-avatar">😀</span>
+                        <span id="current-avatar">😀</span>
                     </div>
-                    <h2 id="display-name">Explorer</h2>
-                    <div id="equipped-title" class="profile-title-badge">Novice</div>
-                    
-                    <div class="profile-stats-mini">
-                        <div class="stat-row">
-                            <span>Cash:</span>
-                            <span id="profile-cash" class="money-text">$0.00</span>
-                        </div>
-                        <div class="stat-row">
-                            <span>Net Worth:</span>
-                            <span id="profile-networth" class="money-text">$0.00</span>
-                        </div>
-                    </div>
-
-                    <div class="action-buttons">
-                        <button id="edit-profile-btn" class="btn btn-secondary btn-sm">✏️ Edit Info</button>
-                        <button id="open-shop-btn" class="btn btn-primary btn-sm" style="display:none;">🛒 Shop</button>
-                        <button id="open-inventory-btn" class="btn btn-accent btn-sm">🎒 Inventory</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: The "Room" -->
-            <div class="profile-room-display">
-                <div class="room-header">
-                    <h3>🏆 Trophy Case</h3>
-                </div>
-                <div id="badges-display" class="badges-shelf">
-                    <!-- Badges go here -->
-                    <p class="empty-shelf-text">Earn badges to display them here!</p>
-                </div>
-
-                <div class="room-header" style="margin-top: 2rem;">
-                    <h3>🛋️ My Room</h3>
-                </div>
-                <div id="decorations-display" class="decorations-grid room-grid">
-                    <!-- Equipped items go here -->
-                    <div class="decoration-slot empty"></div>
-                    <div class="decoration-slot empty"></div>
-                    <div class="decoration-slot empty"></div>
-                    <div class="decoration-slot empty"></div>
-                    <div class="decoration-slot empty"></div>
-                    <div class="decoration-slot empty"></div>
                 </div>
                 
-                <div class="room-header" style="margin-top: 2rem;">
-                    <h3>📜 About Me</h3>
+                <h2 id="display-name" class="profile-name">Explorer</h2>
+                <div id="equipped-title" class="profile-title-badge">Novice</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-label">Cash</span>
+                        <span id="profile-cash" class="stat-value money-text">$0.00</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Net Worth</span>
+                        <span id="profile-networth" class="stat-value money-text">$0.00</span>
+                    </div>
                 </div>
-                <div class="about-me-card">
-                    <p id="display-fun-fact">No fun fact shared yet.</p>
-                    <span id="display-era" class="era-tag">Unknown Era</span>
+
+                <div class="action-buttons">
+                    <button id="edit-profile-btn" class="btn-glow">
+                        <span>✏️</span> Edit Profile
+                    </button>
+                    <button id="open-inventory-btn" class="btn-glow">
+                        <span>🎒</span> Inventory
+                    </button>
+                    <button id="open-shop-btn" class="btn-glow" style="display:none;">
+                        <span>🛒</span> Shop
+                    </button>
+                </div>
+                
+                <!-- Home Selector -->
+                <div class="home-selector-container" style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem; color:#aaa;">Active Home</label>
+                    <select id="home-selector" class="glass-input" style="width:100%; padding:0.5rem; background:rgba(0,0,0,0.3); color:white; border:1px solid rgba(255,255,255,0.2); border-radius:8px;">
+                        <option value="none">Homeless (Default)</option>
+                    </select>
                 </div>
             </div>
+        </aside>
+
+        <!-- Right Column: Dashboard -->
+        <div class="dashboard-content">
+            
+            <!-- Trophy Case -->
+            <div class="glass-panel" style="margin-bottom: 2rem;">
+                <div class="section-header">
+                    <span class="section-icon">🏆</span>
+                    <h3>Trophy Case</h3>
+                </div>
+                <div id="badges-display" class="badges-shelf">
+                    <p class="empty-shelf-text">Earn badges to display them here!</p>
+                </div>
+            </div>
+
+            <!-- My Room -->
+            <div class="glass-panel" style="margin-bottom: 2rem;">
+                <div class="section-header">
+                    <span class="section-icon">🛋️</span>
+                    <h3>My Room</h3>
+                </div>
+                <div id="decorations-display" class="room-grid">
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                    <div class="decoration-slot empty"></div>
+                </div>
+            </div>
+
+            <!-- About Me -->
+            <div class="glass-panel">
+                <div class="section-header">
+                    <span class="section-icon">📜</span>
+                    <h3>About Me</h3>
+                </div>
+                <div class="about-card">
+                    <p id="display-fun-fact" style="font-style: italic; font-size: 1.1rem;">No fun fact shared yet.</p>
+                    <div style="margin-top: 1rem;">
+                        <span id="display-era" class="era-tag">Unknown Era</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -158,6 +533,7 @@
         </div>
     </div>
 
+    <script src="components.js"></script>
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="profile.js"></script>
