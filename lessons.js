@@ -43,7 +43,15 @@ let currentLesson = null;
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        await Promise.all([loadUserData(), fetchLessons()]);
+        await loadUserData();
+        
+        if (userData && userData.role === 'guest') {
+            alert("Your account is pending approval. Please contact your teacher.");
+            window.location.href = "index.html";
+            return;
+        }
+
+        await fetchLessons();
         renderLessons();
         listenToClassGoal();
     } else {

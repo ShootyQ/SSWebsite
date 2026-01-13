@@ -61,6 +61,11 @@ async function loadUserData() {
     const docSnap = await getDoc(doc(db, "users", currentUser.uid));
     if (docSnap.exists()) {
         userData = docSnap.data();
+        if (userData.role === 'guest') {
+            alert("Your account is pending approval. Please contact your teacher.");
+            window.location.href = "index.html";
+            return;
+        }
         updateStatsUI();
     }
 }

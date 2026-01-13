@@ -1,5 +1,6 @@
-import { db } from "./firebase-config.js";
+import { db, auth } from "./firebase-config.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const studentsGrid = document.getElementById("students-grid");
 const modal = document.getElementById("student-modal");
@@ -16,11 +17,28 @@ const modalPortfolioCount = document.getElementById("modal-portfolio-count");
 // Market Data Cache (for calculating net worth)
 let marketDataCache = [];
 
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().role === 'guest') {
+            alert("Your account is pending approval. Please contact your teacher.");
+            window.location.href = "index.html";
+            return;
+        }
+        init();
+    } else {
+        window.location.href = "index.html";
+    }
+});
+
 async function init() {
     setupEventListeners();
     await fetchMarketData(); // Need prices to calc net worth
     loadStudents();
 }
+// Init called by Auth
+// init();
 
 function setupEventListeners() {
     closeModalBtn.onclick = () => modal.style.display = "none";

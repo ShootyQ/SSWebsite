@@ -1,5 +1,6 @@
 import { db, auth } from "./firebase-config.js";
-import { collection, getDocs, doc, runTransaction, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, getDocs, doc, runTransaction, query, orderBy, limit, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const els = {
     grid: document.getElementById('market-grid'),
@@ -9,6 +10,28 @@ const els = {
 };
 
 let allListings = [];
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().role === 'guest') {
+            alert("Your account is pending approval. Please contact your teacher.");
+            window.location.href = "index.html";
+            return;
+        }
+        loadMarketplace();
+    } else {
+        // Allow viewing but not buying? User said "do anything", so implied viewing is okay? 
+        // User said "have to change to user to be able to do anything".
+        // Let's assume Guests/Logged Out = View Only is safer, or Block All.
+        // Given other pages redirect to index, let's Redirect if Guest.
+        // If not logged in at all, we might want to redirect too, OR let them see marketplace as teaser.
+        // Existing logic in other files redirects to index if no user.
+        // Let's redirect if no user or guest for consistency.
+        window.location.href = "index.html";
+    }
+});
 
 async function loadMarketplace() {
     els.grid.innerHTML = '<p>Loading listings...</p>';
@@ -137,5 +160,5 @@ els.refreshBtn.addEventListener('click', loadMarketplace);
 els.searchInput.addEventListener('input', renderListings);
 els.sortSelect.addEventListener('change', renderListings);
 
-// Initial load
-loadMarketplace();
+// Initial load handled by Auth Change
+// loadMarketplace();

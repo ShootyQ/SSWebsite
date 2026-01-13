@@ -73,6 +73,11 @@ async function loadUserProfile() {
     const snap = await getDoc(currentUserRef);
     if (snap.exists()) {
         currentUserData = snap.data();
+        if (currentUserData.role === 'guest') {
+            alert("Your account is pending approval. Please contact your teacher.");
+            window.location.href = "index.html";
+            return;
+        }
         renderProfile(currentUserData);
         applyEquippedItems(currentUserData.equipped);
     }

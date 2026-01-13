@@ -63,6 +63,12 @@ onAuthStateChanged(auth, async (user) => {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
         
+        if (userSnap.exists() && userSnap.data().role === 'guest') {
+            alert("Your account is pending approval. Please contact your teacher.");
+            window.location.href = "index.html";
+            return;
+        }
+        
         // 2. Listen for User Data (Balance/Portfolio)
         onSnapshot(userRef, (doc) => {
             if (doc.exists()) {

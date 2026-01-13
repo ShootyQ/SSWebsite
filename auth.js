@@ -43,13 +43,13 @@ async function checkAndCreateUser(user) {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-        // Create new user document with default role 'student'
+        // Create new user document with default role 'guest'
         await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
-            role: "student", // Default role
+            role: "guest", // Default role
             balance: 1000, // Initial currency
             portfolio: {}, // Empty portfolio map { symbol: quantity }
             createdAt: new Date(),
