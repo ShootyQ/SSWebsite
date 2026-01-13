@@ -68,14 +68,20 @@ async function loadUsers() {
             if (userData.role === 'admin') badgeClass = 'badge-admin';
             else if (userData.role === 'guest') badgeClass = 'badge-secondary';
 
-            let actionsHtml = '';
-            if (userData.role === 'guest') {
-                actionsHtml = `<button class="btn-sm btn-action btn-approve" data-id="${docSnap.id}" style="background-color: #28a745; color: white;">Approve</button>`;
-            } else if (userData.role === 'student') {
-                actionsHtml = `<button class="btn-sm btn-make-admin" data-id="${docSnap.id}">Make Admin</button>`;
-            } else {
-                actionsHtml = `<button class="btn-sm btn-make-student" data-id="${docSnap.id}">Make Student</button>`;
+            let actionsHtml = `<div style="display: flex; gap: 0.5rem;">`;
+            
+            // Render buttons for roles that are NOT the current role
+            if (userData.role !== 'guest') {
+                actionsHtml += `<button class="btn-sm btn-role-change" data-id="${docSnap.id}" data-role="guest" style="background-color: #6c757d; color: white;">Make Guest</button>`;
             }
+            if (userData.role !== 'student') {
+                actionsHtml += `<button class="btn-sm btn-role-change" data-id="${docSnap.id}" data-role="student" style="background-color: #28a745; color: white;">Make Student</button>`;
+            }
+            if (userData.role !== 'admin') {
+                actionsHtml += `<button class="btn-sm btn-role-change" data-id="${docSnap.id}" data-role="admin" style="background-color: #007bff; color: white;">Make Admin</button>`;
+            }
+
+            actionsHtml += `</div>`;
 
             row.innerHTML = `
                 <td>
@@ -99,10 +105,9 @@ async function loadUsers() {
         });
 
         // Add event listeners to buttons
-        document.querySelectorAll('.btn-approve').forEach(btn => {
-            btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, 'student'));
+        document.querySelectorAll('.btn-role-change').forEach(btn => {
+            btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, e.target.dataset.role));
         });
-        document.querySelectorAll('.btn-make-admin').forEach(btn => {
             btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, 'admin'));
         });
         document.querySelectorAll('.btn-make-student').forEach(btn => {
