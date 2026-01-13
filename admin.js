@@ -108,11 +108,6 @@ async function loadUsers() {
         document.querySelectorAll('.btn-role-change').forEach(btn => {
             btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, e.target.dataset.role));
         });
-            btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, 'admin'));
-        });
-        document.querySelectorAll('.btn-make-student').forEach(btn => {
-            btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, 'student'));
-        });
 
         loadingMessage.style.display = "none";
         usersTable.style.display = "table";
