@@ -40,6 +40,14 @@
                     <input type="text" id="lesson-title" required placeholder="e.g., Understanding Inflation">
                 </div>
 
+                <div class="form-group">
+                    <label for="lesson-campaign">Campaign / Unit Name</label>
+                    <input type="text" id="lesson-campaign" required placeholder="e.g., Unit 1: The Great Depression" list="campaign-suggestions">
+                    <datalist id="campaign-suggestions">
+                        <!-- Auto-populated from existing campaigns via JS -->
+                    </datalist>
+                </div>
+
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
                         <label for="lesson-category">Category</label>
@@ -48,7 +56,9 @@
                             <option value="strategy">Trading Strategy</option>
                             <option value="economics">Economics</option>
                             <option value="history">Financial History</option>
+                            <option value="other">Other / Custom</option>
                         </select>
+                        <input type="text" id="lesson-category-custom" placeholder="Enter custom category" style="display: none; margin-top: 0.5rem;">
                     </div>
                     <div>
                         <label for="lesson-difficulty">Difficulty</label>
@@ -57,6 +67,17 @@
                             <option value="intermediate">Intermediate</option>
                             <option value="advanced">Advanced</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                         <label for="lesson-video">YouTube Video URL (Optional)</label>
+                         <input type="url" id="lesson-video" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    <div>
+                        <label for="lesson-thumbnail">Thumbnail Image URL (Optional)</label>
+                        <input type="url" id="lesson-thumbnail" placeholder="http://...">
                     </div>
                 </div>
 
@@ -79,7 +100,16 @@
                 <div id="questions-container">
                     <!-- Questions will be added here -->
                 </div>
-                <button type="button" id="add-question-btn" class="btn btn-secondary" style="margin-bottom: 1.5rem;">+ Add Question</button>
+                <!-- Buttons to add different question types -->
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                    <button type="button" id="add-mc-btn" class="btn btn-secondary">+ Multiple Choice</button>
+                    <button type="button" id="add-order-btn" class="btn btn-secondary">+ Order/Sort</button>
+                </div>
+
+                <div class="form-group" style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                     <h4>Admin Actions</h4>
+                     <button type="button" id="reset-class-goal-btn" class="btn btn-danger">Reset Class Goal Counter</button>
+                </div>
 
                 <button type="submit" class="btn btn-primary btn-block">Publish Lesson</button>
             </form>

@@ -9,30 +9,30 @@ export const RARITIES = {
 
 export const SUFFIXES = [
     // Common
-    { name: "of Old", rarity: 'common' },
-    { name: "of Stone", rarity: 'common' },
-    { name: "of Wood", rarity: 'common' },
-    { name: "of Clay", rarity: 'common' },
+    { name: "of Old", adj: "Ancient", rarity: 'common' },
+    { name: "of Stone", adj: "Stone", rarity: 'common' },
+    { name: "of Wood", adj: "Wooden", rarity: 'common' },
+    { name: "of Clay", adj: "Clay", rarity: 'common' },
     // Uncommon
-    { name: "of Iron", rarity: 'uncommon' },
-    { name: "of the Forest", rarity: 'uncommon' },
-    { name: "of Bronze", rarity: 'uncommon' },
-    { name: "of the Hills", rarity: 'uncommon' },
+    { name: "of Iron", adj: "Iron", rarity: 'uncommon' },
+    { name: "of the Forest", adj: "Forest", rarity: 'uncommon' },
+    { name: "of Bronze", adj: "Bronze", rarity: 'uncommon' },
+    { name: "of the Hills", adj: "Highland", rarity: 'uncommon' },
     // Rare
-    { name: "of Gold", rarity: 'rare' },
-    { name: "of the Ocean", rarity: 'rare' },
-    { name: "of Silver", rarity: 'rare' },
-    { name: "of the Sky", rarity: 'rare' },
+    { name: "of Gold", adj: "Golden", rarity: 'rare' },
+    { name: "of the Ocean", adj: "Oceanic", rarity: 'rare' },
+    { name: "of Silver", adj: "Silver", rarity: 'rare' },
+    { name: "of the Sky", adj: "Celestial", rarity: 'rare' },
     // Epic
-    { name: "of Diamond", rarity: 'epic' },
-    { name: "of the Ancients", rarity: 'epic' },
-    { name: "of Crystal", rarity: 'epic' },
-    { name: "of the Depths", rarity: 'epic' },
+    { name: "of Diamond", adj: "Diamond", rarity: 'epic' },
+    { name: "of the Ancients", adj: "Primeval", rarity: 'epic' },
+    { name: "of Crystal", adj: "Crystalline", rarity: 'epic' },
+    { name: "of the Depths", adj: "Abyssal", rarity: 'epic' },
     // Legendary
-    { name: "of the Cosmos", rarity: 'legendary' },
-    { name: "of Eternity", rarity: 'legendary' },
-    { name: "of Truth", rarity: 'legendary' },
-    { name: "of Light", rarity: 'legendary' }
+    { name: "of the Cosmos", adj: "Cosmic", rarity: 'legendary' },
+    { name: "of Eternity", adj: "Eternal", rarity: 'legendary' },
+    { name: "of Truth", adj: "True", rarity: 'legendary' },
+    { name: "of Light", adj: "Radiant", rarity: 'legendary' }
 ];
 
 export const SHOP_ITEMS = [
@@ -139,13 +139,24 @@ export function generateLoot(forceRarity = null, source = 'drop') {
     const possibleSuffixes = SUFFIXES.filter(s => s.rarity === rarity);
     const suffix = possibleSuffixes.length > 0 
         ? possibleSuffixes[Math.floor(Math.random() * possibleSuffixes.length)]
-        : { name: "" };
+        : { name: "", adj: "" };
 
-    // 4. Construct Item
+    // 4. Construct Name
+    // Avoid double "of" by using adjective prefix if base name already has "of"
+    let finalName = baseItem.name;
+    if (suffix.name) {
+        if (baseItem.name.includes(' of ') && suffix.adj) {
+            finalName = `${suffix.adj} ${baseItem.name}`;
+        } else {
+            finalName = `${baseItem.name} ${suffix.name}`;
+        }
+    }
+
+    // 5. Construct Item
     return {
         uuid: crypto.randomUUID(),
         baseId: baseItem.id,
-        name: suffix.name ? `${baseItem.name} ${suffix.name}` : baseItem.name,
+        name: finalName,
         rarity: rarity,
         type: baseItem.type,
         icon: baseItem.icon,

@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase-config.js";
 import { generateLoot } from "./game_data.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, getDoc, updateDoc, arrayUnion, increment, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, getDoc, updateDoc, arrayUnion, increment, runTransaction, collection, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- Data ---
 let LESSONS = [];
@@ -14,6 +14,10 @@ const els = {
     diffFilter: document.getElementById('difficulty-filter'),
     modal: document.getElementById('lesson-modal'),
     closeModal: document.getElementById('close-lesson-modal'),
+    
+    // Class Goal
+    goalFill: document.getElementById('class-goal-fill'),
+    goalCounter: document.getElementById('class-goal-counter'),
     
     // Modal Elements
     mTitle: document.getElementById('modal-title'),
@@ -41,10 +45,25 @@ onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         await Promise.all([loadUserData(), fetchLessons()]);
         renderLessons();
+        listenToClassGoal();
     } else {
         window.location.href = "index.html";
     }
 });
+
+function listenToClassGoal() {
+    onSnapshot(doc(db, "system", "gamestate"), (doc) => {
+        if(doc.exists()) {
+             const data = doc.data();
+             const total = data.totalLessonsCompleted || 0;
+             const target = 500;
+             const pct = Math.min(100, (total / target) * 100);
+             
+             if(els.goalFill) els.goalFill.style.width = `${pct}%`;
+             if(els.goalCounter) els.goalCounter.textContent = `${total} / ${target} Lessons`;
+        }
+    });
+}
 
 async function fetchLessons() {
     try {
@@ -93,39 +112,65 @@ function renderLessons() {
         return matchesSearch && matchesCat && matchesDiff;
     });
 
-    // Sort: Pending first, then Completed
-    filtered.sort((a, b) => {
-        const aCompleted = completed.includes(a.id);
-        const bCompleted = completed.includes(b.id);
-        if (aCompleted === bCompleted) return 0;
-        return aCompleted ? 1 : -1; // If a is completed, it goes after b (pending)
-    });
-
     if (filtered.length === 0) {
         els.grid.innerHTML = '<div class="no-results">No lessons found matching your criteria.</div>';
         return;
     }
 
+    // Group by Campaign
+    const campaigns = {};
     filtered.forEach(lesson => {
-        const isCompleted = completed.includes(lesson.id);
-        const card = document.createElement('div');
-        card.className = `lesson-card ${isCompleted ? 'completed' : ''}`;
-        card.onclick = () => openLesson(lesson);
-
-        card.innerHTML = `
-            <div class="lesson-card-header">
-                <span class="badge-tag ${lesson.category}">${lesson.category}</span>
-                ${isCompleted ? '<span class="status-icon">✅</span>' : ''}
-            </div>
-            <h3>${lesson.title}</h3>
-            <p>${lesson.description}</p>
-            <div class="lesson-card-footer">
-                <span class="difficulty ${lesson.difficulty}">${lesson.difficulty}</span>
-                <span class="reward">💰 ${lesson.reward}</span>
-            </div>
-        `;
-        els.grid.appendChild(card);
+        const cName = lesson.campaign || "General Lessons";
+        if (!campaigns[cName]) campaigns[cName] = [];
+        campaigns[cName].push(lesson);
     });
+
+    // Render Campaigns
+    for (const [campaignName, campaignLessons] of Object.entries(campaigns)) {
+        // Sort lessons inside campaign (Simple alphabet sort for now, ideally strictly ordered)
+        // Or if 'order' field exists. For now, assume creation order or alphabetical?
+        // Let's sort completed last inside the campaign row
+        campaignLessons.sort((a, b) => {
+            const aCompleted = completed.includes(a.id);
+            const bCompleted = completed.includes(b.id);
+            if (aCompleted === bCompleted) return 0;
+            return aCompleted ? 1 : -1;
+        });
+
+        // Campaign Header
+        const campaignHeader = document.createElement('div');
+        campaignHeader.className = 'campaign-header';
+        campaignHeader.style.gridColumn = "1 / -1";
+        campaignHeader.style.marginTop = "1.5rem";
+        campaignHeader.style.borderBottom = "2px solid #eee";
+        campaignHeader.innerHTML = `<h3 style="margin-bottom:0.5rem; color:#2c3e50;">📌 ${campaignName}</h3>`;
+        els.grid.appendChild(campaignHeader);
+
+        // Render Lessons for this campaign
+        campaignLessons.forEach(lesson => {
+            const isCompleted = completed.includes(lesson.id);
+            const card = document.createElement('div');
+            card.className = `lesson-card ${isCompleted ? 'completed' : ''}`;
+            card.onclick = () => openLesson(lesson);
+
+            card.innerHTML = `
+                ${lesson.thumbnailUrl ? `<div class="lesson-thumbnail" style="background-image: url('${lesson.thumbnailUrl}'); height: 140px; background-size: cover; background-position: center; border-radius: 8px 8px 0 0;"></div>` : ''}
+                <div class="lesson-card-header" ${lesson.thumbnailUrl ? 'style="border-radius: 0;"' : ''}>
+                    <span class="badge-tag ${lesson.category}">${lesson.category}</span>
+                    ${isCompleted ? '<span class="status-icon">✅</span>' : ''}
+                </div>
+                <div style="padding: 1rem;">
+                    <h3 style="margin-top: 0;">${lesson.title}</h3>
+                    <p>${lesson.description}</p>
+                    <div class="lesson-card-footer">
+                        <span class="difficulty ${lesson.difficulty}">${lesson.difficulty}</span>
+                        <span class="reward">💰 ${lesson.reward}</span>
+                    </div>
+                </div>
+            `;
+            els.grid.appendChild(card);
+        });
+    }
 }
 
 // --- Modal Logic ---
@@ -138,7 +183,18 @@ function openLesson(lesson) {
     els.mCategory.className = `badge-tag ${lesson.category}`;
     els.mDifficulty.textContent = lesson.difficulty.toUpperCase();
     els.mReward.textContent = lesson.reward;
-    els.mContent.innerHTML = lesson.content;
+    
+    // Video Embed
+    let contentHtml = "";
+    if (lesson.videoUrl) {
+        contentHtml += `
+            <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-bottom: 1.5rem;">
+                <iframe src="${lesson.videoUrl}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+            </div>
+        `;
+    }
+    contentHtml += lesson.content;
+    els.mContent.innerHTML = contentHtml;
     
     // Render Quiz
     els.mQuiz.innerHTML = '';
@@ -149,17 +205,38 @@ function openLesson(lesson) {
         lesson.quiz.forEach((q, index) => {
             const qDiv = document.createElement('div');
             qDiv.className = 'quiz-question';
-            qDiv.innerHTML = `
-                <p><strong>Q${index + 1}:</strong> ${q.question}</p>
-                <div class="quiz-options">
-                    ${q.options.map((opt, i) => `
-                        <label class="quiz-option">
-                            <input type="radio" name="q${index}" value="${i}">
-                            ${opt}
-                        </label>
-                    `).join('')}
-                </div>
-            `;
+            
+            if (q.type === 'order') {
+                // Drag and Drop Rendering
+                // Shuffle items for display
+                const shuffled = [...q.correctOrder].sort(() => Math.random() - 0.5);
+                
+                qDiv.innerHTML = `
+                     <p><strong>Q${index + 1}:</strong> ${q.question}</p>
+                     <ul class="sortable-list" id="sortable-list-${index}">
+                         ${shuffled.map(item => `
+                             <li draggable="true" class="draggable-item">↕️ ${item}</li>
+                         `).join('')}
+                     </ul>
+                `;
+
+                // Add drag events after render
+                requestAnimationFrame(() => setupDragAndDrop(index));
+
+            } else {
+                // MC Rendering
+                qDiv.innerHTML = `
+                    <p><strong>Q${index + 1}:</strong> ${q.question}</p>
+                    <div class="quiz-options">
+                        ${q.options.map((opt, i) => `
+                            <label class="quiz-option">
+                                <input type="radio" name="q${index}" value="${i}">
+                                ${opt}
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+            }
             els.mQuiz.appendChild(qDiv);
         });
         els.mQuiz.style.display = 'block';
@@ -186,29 +263,55 @@ els.mSubmit.addEventListener('click', async () => {
 
     // Validate Answers
     let correctCount = 0;
-    let allAnswered = true;
+    const questions = currentLesson.quiz;
+    let passed = true;
 
-    currentLesson.quiz.forEach((q, index) => {
-        const selected = document.querySelector(`input[name="q${index}"]:checked`);
-        if (!selected) {
-            allAnswered = false;
-        } else if (parseInt(selected.value) === parseInt(q.answer)) {
-            correctCount++;
+    questions.forEach((q, index) => {
+        let isCorrect = false;
+
+        if (q.type === 'order') {
+             // Validate Order
+             const list = document.getElementById(`sortable-list-${index}`);
+             if(list) {
+                const items = Array.from(list.children).map(li => li.textContent.replace('↕️ ', ''));
+                if (JSON.stringify(items) === JSON.stringify(q.correctOrder)) {
+                    isCorrect = true;
+                }
+             }
+        } else {
+             // MC Default
+             const selected = document.querySelector(`input[name="q${index}"]:checked`);
+             if (selected && parseInt(selected.value) === q.answer) {
+                 isCorrect = true;
+             }
         }
+
+        if (isCorrect) correctCount++;
     });
 
-    if (!allAnswered) {
-        alert("Please answer all questions!");
-        return;
-    }
 
     if (correctCount === currentLesson.quiz.length) {
         // Success!
+        
+        // Update Class Global Stats
+        try {
+             const sysRef = doc(db, "system", "gamestate");
+             await updateDoc(sysRef, {
+                 totalLessonsCompleted: increment(1)
+             });
+        } catch(e) {
+             console.error("Failed to update class stats", e);
+             try {
+                // Create if missing
+                await setDoc(doc(db, "system", "gamestate"), { totalLessonsCompleted: 1 }, { merge: true });
+             } catch(e2) {}
+        }
+        
         await completeLesson(currentLesson);
     } else {
         // Fail
         els.mFeedback.textContent = `You got ${correctCount}/${currentLesson.quiz.length} correct. Try again!`;
-        els.mFeedback.classList.add('error');
+        els.mFeedback.className = "quiz-feedback error";
         els.mFeedback.style.display = 'block';
     }
 });
@@ -285,3 +388,49 @@ window.onclick = (e) => { if (e.target === els.modal) els.modal.style.display = 
 els.search.addEventListener('input', renderLessons);
 els.catFilter.addEventListener('change', renderLessons);
 els.diffFilter.addEventListener('change', renderLessons);
+
+function setupDragAndDrop(index) {
+    const list = document.getElementById('sortable-list-' + index);
+    if (!list) return;
+
+    let draggedItem = null;
+
+    const items = list.querySelectorAll('.draggable-item');
+    items.forEach(item => {
+        item.addEventListener('dragstart', function () {
+            draggedItem = item;
+            setTimeout(() => item.classList.add('dragging'), 0);
+        });
+
+        item.addEventListener('dragend', function () {
+            setTimeout(() => {
+                draggedItem = null;
+                item.classList.remove('dragging');
+            }, 0);
+        });
+    });
+
+    list.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(list, e.clientY);
+        if (afterElement == null) {
+            list.appendChild(draggedItem);
+        } else {
+            list.insertBefore(draggedItem, afterElement);
+        }
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}

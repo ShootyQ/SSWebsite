@@ -612,6 +612,16 @@ function setupEventListeners() {
             if (viewId === "stats") loadUserStatistics();
         });
     });
+
+    const chartSelector = document.getElementById("chart-view-selector");
+    if (chartSelector) {
+        chartSelector.addEventListener("change", (e) => {
+            if (userData) {
+                 const transactions = userData.transactions || [];
+                 renderPerformanceChart(transactions, e.target.value);
+            }
+        });
+    }
 }
 
 let performanceChart = null;
@@ -684,12 +694,15 @@ function loadUserStatistics() {
     const noTransMsg = document.getElementById("no-transactions-msg");
     const transactions = userData.transactions || [];
 
-    if (transactions.length === 0) {
+    // Sort transactions by date (descending for list)
+    const sortedTransForList = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (sortedTransForList.length === 0) {
         historyBody.innerHTML = "";
         noTransMsg.style.display = "block";
     } else {
         noTransMsg.style.display = "none";
-        historyBody.innerHTML = transactions.map(t => `
+        historyBody.innerHTML = sortedTransForList.map(t => `
             <tr>
                 <td>${new Date(t.date).toLocaleDateString()}</td>
                 <td style="color: ${t.type === 'buy' ? 'green' : 'red'}; font-weight:bold;">${t.type.toUpperCase()}</td>
@@ -702,10 +715,11 @@ function loadUserStatistics() {
     }
 
     // 2. Render Performance Chart
-    renderPerformanceChart(transactions);
+    const currentMode = document.getElementById("chart-view-selector") ? document.getElementById("chart-view-selector").value : "netWorth";
+    renderPerformanceChart(transactions, currentMode);
 }
 
-function renderPerformanceChart(transactions) {
+function renderPerformanceChart(transactions, mode = "netWorth") {
     const ctx = document.getElementById('performance-chart').getContext('2d');
     
     // Destroy existing chart if any
@@ -713,38 +727,85 @@ function renderPerformanceChart(transactions) {
         performanceChart.destroy();
     }
 
-    // Generate Data Points for the Chart
-    // Since we don't have historical snapshots, we will reconstruct "Net Worth" history 
-    // based on transactions. This is an approximation.
-    // Start with current balance + current portfolio value
-    
-    // For a better graph, we'll just plot the "Cash Balance" history for now as it's easier to reconstruct
-    // Or we can just show a mock graph if no data exists.
-    
-    let dataPoints = [];
     let labels = [];
-    
-    if (transactions.length > 0) {
-        // Reconstruct balance history backwards
-        let currentBal = userData.balance;
-        // Add "Now" point
-        labels.unshift("Now");
-        dataPoints.unshift(currentBal);
+    let dataPoints = [];
+    let labelText = "Net Worth";
+    let color = "#3498db";
 
-        transactions.forEach(t => {
-            // Reverse the transaction to find previous balance
-            if (t.type === 'buy') {
-                currentBal += t.total;
-            } else {
-                currentBal -= t.total;
-            }
-            labels.unshift(new Date(t.date).toLocaleDateString());
-            dataPoints.unshift(currentBal);
-        });
-    } else {
-        // Default / Empty State
+    if (transactions.length === 0) {
         labels = ["Start"];
-        dataPoints = [1000]; // Default starting cash
+        dataPoints = [1000];
+    } else {
+        // Sort transactions by date (ascending for graph)
+        const sortedTrans = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // State Tracking
+        let currentCash = 1000; // Starting cash
+        let portfolio = {}; // symbol -> shares
+        let lastKnownPrices = {}; // symbol -> price
+
+        // Add Start Point
+        labels.push("Start");
+        if (mode === "netWorth" || mode === "cash") dataPoints.push(1000);
+        else dataPoints.push(0);
+
+        sortedTrans.forEach(t => {
+            // Update Price
+            lastKnownPrices[t.symbol] = t.price;
+
+            // Update Cash and Portfolio
+            if (t.type === 'buy') {
+                currentCash -= t.total;
+                portfolio[t.symbol] = (portfolio[t.symbol] || 0) + t.shares;
+            } else {
+                currentCash += t.total;
+                portfolio[t.symbol] = (portfolio[t.symbol] || 0) - t.shares;
+            }
+
+            // Calculate Metric
+            let value = 0;
+            if (mode === "cash") {
+                value = currentCash;
+            } else {
+                let investmentsValue = 0;
+                for (const symbol in portfolio) {
+                    const shares = portfolio[symbol];
+                    const price = lastKnownPrices[symbol] || 0; // Use last transaction price
+                    if (shares > 0) {
+                         investmentsValue += shares * price;
+                    }
+                }
+                
+                if (mode === "investments") {
+                    value = investmentsValue;
+                } else { // netWorth
+                    value = currentCash + investmentsValue;
+                }
+            }
+
+            labels.push(new Date(t.date).toLocaleDateString());
+            dataPoints.push(value);
+        });
+
+        // Add "Current" Point (Real-time update)
+        // Use userData.balance and actual marketData prices
+        if (userData && marketData.length > 0) {
+             const nowValues = calculatePerformance(userData); // Reuse calculation logic
+             labels.push("Now");
+             
+             if (mode === "cash") dataPoints.push(userData.balance);
+             else if (mode === "investments") dataPoints.push(nowValues.currentValue);
+             else dataPoints.push(userData.balance + nowValues.currentValue);
+        }
+    }
+
+    // Colors
+    if (mode === "cash") {
+        labelText = "Cash on Hand";
+        color = "#2ecc71";
+    } else if (mode === "investments") {
+        labelText = "Investments Value";
+        color = "#e74c3c";
     }
 
     performanceChart = new Chart(ctx, {
@@ -752,11 +813,11 @@ function renderPerformanceChart(transactions) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Cash Balance History',
+                label: labelText,
                 data: dataPoints,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                tension: 0.4,
+                borderColor: color,
+                backgroundColor: color + '1A', // 10% opacity
+                tension: 0.2,
                 fill: true
             }]
         },
@@ -764,8 +825,13 @@ function renderPerformanceChart(transactions) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: true
+                legend: { display: true },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return labelText + ': ' + formatCurrency(context.parsed.y);
+                        }
+                    }
                 }
             },
             scales: {
