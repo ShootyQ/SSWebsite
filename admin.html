@@ -32,9 +32,30 @@
 
         <hr style="margin: 3rem 0; border: 0; border-top: 1px solid #eee;">
 
-        <h2>Create New Lesson</h2>
+        <h2>Manage Lessons</h2>
+        <div id="loading-lessons">Loading lessons...</div>
+        <div class="table-responsive">
+            <table id="lessons-table" style="display: none; width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Campaign</th>
+                        <th>Category</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="lessons-list">
+                    <!-- Lessons will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <hr style="margin: 3rem 0; border: 0; border-top: 1px solid #eee;">
+
+        <h2 id="form-title">Create New Lesson</h2>
         <div class="profile-card" style="max-width: 800px; margin: 0 auto;">
             <form id="create-lesson-form">
+                <input type="hidden" id="edit-lesson-id" value="">
                 <div class="form-group">
                     <label for="lesson-title">Lesson Title</label>
                     <input type="text" id="lesson-title" required placeholder="e.g., Understanding Inflation">
