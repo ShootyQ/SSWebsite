@@ -111,13 +111,15 @@ async function processDailyEconomy(userRef, userData) {
 
 // Monitor Auth State
 onAuthStateChanged(auth, async (user) => {
+    // Re-query elements here to ensure they exist (handling async race conditions)
     const profileLink = document.getElementById("profile-link");
+    const dynamicLoginBtn = document.getElementById("login-btn");
     
     if (user) {
         // User is signed in
-        if (loginBtn) {
-            loginBtn.textContent = "Logout";
-            loginBtn.onclick = logout;
+        if (dynamicLoginBtn) {
+            dynamicLoginBtn.textContent = "Logout";
+            dynamicLoginBtn.onclick = logout;
         }
 
         // Show Profile Link

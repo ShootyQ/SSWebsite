@@ -36,17 +36,22 @@ if (logoutBtn) {
 // Check Admin Status and Load Data
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Check if user is admin
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists() && userSnap.data().role === 'admin') {
-            loadUsers();
-            loadLessons();
-            setupLessonForm();
-        } else {
-            alert("Access Denied: You must be an admin to view this page.");
-            window.location.href = "index.html";
+        try {
+            // Check if user is admin
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists() && userSnap.data().role === 'admin') {
+                loadUsers();
+                loadLessons();
+                setupLessonForm();
+            } else {
+                alert("Access Denied: You must be an admin to view this page.");
+                window.location.href = "index.html";
+            }
+        } catch (error) {
+            console.error("Error verifying admin status:", error);
+            alert("Error verifying permissions: " + error.message);
         }
     } else {
         window.location.href = "index.html";
