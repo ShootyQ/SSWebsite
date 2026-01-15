@@ -46,6 +46,7 @@ onAuthStateChanged(auth, async (user) => {
                 loadLessons();
                 setupLessonForm();
                 ensureCivicsLesson(); // Auto-seed the civics lesson
+                ensureDepressionVocabLesson(); // Auto-seed the history vocab lesson
             } else {
                 alert("Access Denied: You must be an admin to view this page.");
                 window.location.href = "index.html";
@@ -129,6 +130,101 @@ async function ensureCivicsLesson() {
                  ]
              });
              alert("New Civics Lesson has been added to the database!");
+             loadLessons();
+        }
+    } catch(e) {
+        console.error("Error seeding lesson", e);
+    }
+}
+
+async function ensureDepressionVocabLesson() {
+    const lessonId = "vocab_lesson_history_depression_1";
+    try {
+        const docRef = doc(db, "lessons", lessonId);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+             console.log("Seeding history vocab lesson...");
+             await setDoc(docRef, {
+                 title: "The Great Depression: Key Vocabulary",
+                 description: "Learn terms related to the causes and impact of the Great Depression, from market crashes to relief efforts.",
+                 category: "history",
+                 difficulty: "easy",
+                 reward: 150,
+                 campaign: "Vocabulary Builders",
+                 thumbnailUrl: "https://images.unsplash.com/photo-1518182170546-0766ce6fec56?auto=format&fit=crop&q=80&w=300",
+                 content: `
+                    <h3>Key Terms</h3>
+                    <p>Master these definitions to understand the economic challenges of the 1930s.</p>
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                        <ul style="line-height: 1.6; padding-left: 1.2rem;">
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Invest</strong>: To commit money in hopes of making more money in the future.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Stock exchange</strong>: A place/system where shares in corporations are bought and sold through an organized market.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Decline</strong>: To drop or go down suddenly.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Collapse</strong>: A sudden fall or failure of something (like a structure or the value of money).</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Default</strong>: To fail to meet an obligation, especially a financial one.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Relief</strong>: Aid to the needy; welfare.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Public works</strong>: Projects built with public funds for public use (roads, parks, bridges, libraries, etc.).</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Buying on margin</strong>: Buying stock by paying part of the price and borrowing the rest; increases gains but also multiplies losses.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Hawley-Smoot Tariff</strong>: A tax on imported goods; other countries raised their own tariffs in response, which reduced trade and hurt businesses.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Reconstruction Finance Corporation (RFC)</strong>: Government agency that lent money to banks and businesses, but was criticized for not directly helping regular people enough.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Hoovervilles</strong>: Makeshift shantytowns of homeless people during the Depression, named to blame Hoover.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Bonus Army</strong>: WWI veterans who marched on Washington, D.C., demanding early payment of promised bonuses.</li>
+                        </ul>
+                    </div>
+                 `,
+                 quiz: [
+                    {
+                        question: "What term describes buying stock by paying only part of the price and borrowing the rest?",
+                        options: ["Invest", "Buying on margin", "Deficit spending", "Subsidy"],
+                        answer: 1,
+                        type: "mc"
+                    },
+                    {
+                        question: "What were the makeshift shantytowns of homeless people during the Depression called?",
+                        options: ["Roosevelt Roads", "Hoovervilles", "Tent Cities", "Bonus Camps"],
+                        answer: 1,
+                        type: "mc"
+                    },
+                    {
+                        question: "A place or system where shares in corporations are bought and sold is called a:",
+                        options: ["Public works", "Stock exchange", "Tariff", "Pension fund"],
+                        answer: 1,
+                        type: "mc"
+                    },
+                    {
+                        question: "When a person or organization fails to meet a financial obligation, they are said to:",
+                        options: ["Invest", "Decline", "Default", "Collapse"],
+                        answer: 2,
+                        type: "mc"
+                    },
+                    {
+                        question: "Which high tax on imported goods caused other countries to raise their own tariffs, hurting global trade?",
+                        options: ["Hawley-Smoot Tariff", "Income Tax", "Sales Tax", "Property Tax"],
+                        answer: 0,
+                        type: "mc"
+                    },
+                    {
+                        question: "Who were the 'Bonus Army'?",
+                        options: ["Farmers demanding subsidies", "WWI veterans demanding early bonus payments", "Bankers asking for bailouts", "Construction workers on public projects"],
+                        answer: 1,
+                        type: "mc"
+                    },
+                    {
+                        question: "Projects built with public funds for public use, like roads and parks, are known as:",
+                        options: ["Public works", "Private equity", "Commercial real estate", "Industrial zones"],
+                        answer: 0,
+                        type: "mc"
+                    },
+                    {
+                        question: "The Reconstruction Finance Corporation (RFC) was criticized for primarily helping:",
+                        options: ["Homeless individuals", "Banks and businesses", "Farmers", "Veterans"],
+                        answer: 1,
+                        type: "mc"
+                    }
+                 ]
+             });
+             alert("New History Vocab Lesson has been added to the database!");
              loadLessons();
         }
     } catch(e) {
