@@ -51,21 +51,20 @@ onAuthStateChanged(auth, async (user) => {
         await loadUserData();
         initGrid();
         subscribeToGrid(); // Real-time updates
-        
-        // Setup Modal Close
-        els.closeBuild.onclick = () => els.buildModal.style.display = "none";
-        // Info Modal Events
-        if(els.infoBtn) els.infoBtn.onclick = () => els.infoModal.style.display = "flex";
-        if(els.closeInfo) els.closeInfo.onclick = () => els.infoModal.style.display = "none";
-
-        window.onclick = (e) => {
-            if (e.target == els.buildModal) els.buildModal.style.display = "none";
-            if (e.target == els.infoModal) els.infoModal.style.display = "none";
-        };
     } else {
         window.location.href = "index.html";
     }
 });
+
+// Event Listeners
+if(els.closeBuild) els.closeBuild.onclick = () => els.buildModal.style.display = "none";
+if(els.infoBtn) els.infoBtn.onclick = () => els.infoModal.style.display = "flex";
+if(els.closeInfo) els.closeInfo.onclick = () => els.infoModal.style.display = "none";
+
+window.onclick = (e) => {
+    if (e.target == els.buildModal) els.buildModal.style.display = "none";
+    if (e.target == els.infoModal) els.infoModal.style.display = "none";
+};
 
 async function loadUserData() {
     const docSnap = await getDoc(doc(db, "users", currentUser.uid));

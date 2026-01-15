@@ -30,6 +30,13 @@ const studentNetWorth = document.getElementById("student-networth");
 const studentCompletedCount = document.getElementById("student-completed-count");
 const studentCompletedList = document.getElementById("student-completed-list");
 
+// Lesson Stats Modal Elements
+const lessonStatsModal = document.getElementById("lesson-stats-modal");
+const closeLessonStatsModal = document.getElementById("close-lesson-stats-modal");
+const lessonStatsTitle = document.getElementById("lesson-stats-title");
+const lessonStatsCount = document.getElementById("lesson-stats-count");
+const lessonStatsList = document.getElementById("lesson-stats-list");
+
 let lessonsMap = {};
 let usersMap = {};
 
@@ -337,6 +344,7 @@ async function loadLessons() {
                 <td>${lesson.campaign || '-'}</td>
                 <td>${lesson.category}</td>
                 <td>
+                    <button class="btn-sm btn-view-stats" data-id="${docSnap.id}" style="background-color: #17a2b8; color: white; margin-right: 0.5rem;">Stats</button>
                     <button class="btn-sm btn-edit-lesson" data-id="${docSnap.id}">Edit</button>
                     <button class="btn-sm btn-danger btn-delete-lesson" data-id="${docSnap.id}">Delete</button>
                 </td>
@@ -346,6 +354,9 @@ async function loadLessons() {
         });
 
         // Add event listeners
+        document.querySelectorAll('.btn-view-stats').forEach(btn => {
+            btn.addEventListener('click', (e) => viewLessonStats(e.target.dataset.id));
+        });
         document.querySelectorAll('.btn-edit-lesson').forEach(btn => {
             btn.addEventListener('click', (e) => editLesson(e.target.dataset.id));
         });
@@ -524,12 +535,42 @@ function viewStudentProgress(userId) {
     studentModal.style.display = "block";
 }
 
+function viewLessonStats(lessonId) {
+    const lessonTitle = lessonsMap[lessonId] || "Unknown Lesson";
+    lessonStatsTitle.textContent = lessonTitle;
+    
+    let count = 0;
+    lessonStatsList.innerHTML = "";
+    
+    // usersMap is populated by loadUsers() which runs on init
+    Object.values(usersMap).forEach(user => {
+        if (user.completedLessons && user.completedLessons.includes(lessonId)) {
+            count++;
+            const li = document.createElement("li");
+            li.textContent = user.displayName || user.email || "Unknown User";
+            lessonStatsList.appendChild(li);
+        }
+    });
+    
+    if (count === 0) {
+        lessonStatsList.innerHTML = "<li>No students have completed this lesson yet.</li>";
+    }
+    
+    lessonStatsCount.textContent = count;
+    lessonStatsModal.style.display = "block";
+}
+
 // Modal Events
 if(closeStudentModal) {
     closeStudentModal.onclick = () => studentModal.style.display = "none";
 }
+if(closeLessonStatsModal) {
+    closeLessonStatsModal.onclick = () => lessonStatsModal.style.display = "none";
+}
+
 window.onclick = (e) => {
     if (e.target === studentModal) studentModal.style.display = "none";
+    if (e.target === lessonStatsModal) lessonStatsModal.style.display = "none";
 }
 
 // --- Lesson Creation Logic ---
