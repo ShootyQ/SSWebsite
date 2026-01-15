@@ -80,64 +80,6 @@ async function fetchLessons() {
         querySnapshot.forEach((doc) => {
             LESSONS.push({ id: doc.id, ...doc.data() });
         });
-
-        // Added Lesson: Civics/Economics Vocab
-        LESSONS.push({
-             id: "vocab_lesson_civics_1",
-             title: "Civics & Economics Vocabulary",
-             description: "Master key vocabulary about government assistance, subsidies, and social safety nets.",
-             category: "civics",
-             difficulty: "easy",
-             reward: 150,
-             campaign: "Vocabulary Builders",
-             thumbnailUrl: "https://images.unsplash.com/photo-1526304640152-d4619684e484?auto=format&fit=crop&q=80&w=300",
-             content: `
-                <h3>Key Terms</h3>
-                <p>Study these definitions carefully before taking the quiz!</p>
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                    <ul style="line-height: 1.6; padding-left: 1.2rem;">
-                        <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Work relief</strong>: Government programs that give needy people jobs (instead of just cash handouts).</li>
-                        <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Subsidy</strong>: Money the government gives to a person/company for an action the government wants (e.g., farmers reducing crops).</li>
-                        <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Generate</strong>: To produce or make something exist (e.g., dams generate electricity).</li>
-                        <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Pension</strong>: A regular payment to a person, usually after retirement.</li>
-                        <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Unemployment insurance</strong>: Government payments for a limited time to people who have lost their jobs.</li>
-                        <li style="margin-bottom: 0.5rem;"><strong style="color: #2c3e50;">Welfare</strong>: Help for people’s health, happiness, and basic comfort/safety (often through government support).</li>
-                    </ul>
-                </div>
-             `,
-             quiz: [
-                {
-                    question: "Which term describes government programs that provide jobs to needy people rather than just giving them cash?",
-                    options: ["Work relief", "Welfare", "Unemployment insurance", "Subsidy"],
-                    answer: 0
-                },
-                {
-                    question: "Farmers receiving money from the government to reduce their crop production is an example of a:",
-                    options: ["Pension", "Subsidy", "Tax break", "Tariff"],
-                    answer: 1
-                },
-                {
-                    question: "To 'generate' something means to:",
-                    options: ["Consume or use it up", "Produce or make it exist", "Regulate or control it", "Distribute or share it"],
-                    answer: 1
-                },
-                {
-                    question: "What is a regular payment made to a person, typically after they have retired?",
-                    options: ["Salary", "Pension", "Severance", "Bonus"],
-                    answer: 1
-                },
-                {
-                    question: "If you lose your job, which government program might provide payments for a limited time?",
-                    options: ["Social security", "Worker's compensation", "Unemployment insurance", "Welfare"],
-                    answer: 2
-                },
-                {
-                    question: "Which term broadly refers to help for people’s health, happiness, and basic comfort?",
-                    options: ["Public works", "Welfare", "Infrastructure", "Insurance"],
-                    answer: 1
-                }
-             ]
-        });
     } catch (error) {
         console.error("Error fetching lessons:", error);
         els.grid.innerHTML = '<div class="error">Failed to load lessons. Please try again later.</div>';
