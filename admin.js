@@ -503,8 +503,8 @@ function viewStudentProgress(userId) {
     if (!user) return;
 
     studentName.textContent = user.displayName || user.email || "Unknown Student";
-    studentBalance.textContent = `$${(user.balance || 0).toLocaleString()}`;
-    studentNetWorth.textContent = `$${(user.netWorth || 0).toLocaleString()}`;
+    studentBalance.textContent = `$${(user.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    studentNetWorth.textContent = `$${(user.netWorth || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     
     const completed = user.completedLessons || [];
     studentCompletedCount.textContent = completed.length;
