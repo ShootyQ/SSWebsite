@@ -36,6 +36,11 @@ const els = {
     buildOptions: document.getElementById('building-options'),
     closeBuild: document.getElementById('close-build-modal'),
     
+    // Info Modal
+    infoBtn: document.getElementById('info-btn'),
+    infoModal: document.getElementById('info-modal'),
+    closeInfo: document.getElementById('close-info-modal'),
+
     leaderboard: document.getElementById('leaderboard-list')
 };
 
@@ -49,8 +54,13 @@ onAuthStateChanged(auth, async (user) => {
         
         // Setup Modal Close
         els.closeBuild.onclick = () => els.buildModal.style.display = "none";
+        // Info Modal Events
+        if(els.infoBtn) els.infoBtn.onclick = () => els.infoModal.style.display = "flex";
+        if(els.closeInfo) els.closeInfo.onclick = () => els.infoModal.style.display = "none";
+
         window.onclick = (e) => {
             if (e.target == els.buildModal) els.buildModal.style.display = "none";
+            if (e.target == els.infoModal) els.infoModal.style.display = "none";
         };
     } else {
         window.location.href = "index.html";

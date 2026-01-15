@@ -329,7 +329,9 @@
                     <span id="user-xp" class="stat-val xp">1.0x</span>
                 </div>
             </div>
-
+        <button id="info-btn" style="background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 0.5rem; border-radius: 8px; cursor: pointer; margin-bottom: 1rem; width: 100%;">
+            ℹ️ How to Play
+        </button>
             <!-- Selected Plot Details -->
             <div id="plot-details" class="plot-info-card">
                 <div class="plot-coords">COORDS: <span id="selected-coords">0,0</span></div>
@@ -372,8 +374,26 @@
         </div>
     </div>
 
-    <script src="components.js"></script>
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="realestate.js"></script>
-</body>
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px; line-height: 1.6;">
+            <span class="close-modal" id="close-info-modal">&times;</span>
+            <h2 style="color: var(--neon-blue); margin-bottom: 1rem;">Neon City Real Estate Guide</h2>
+            
+            <h3 style="color: var(--neon-purple); margin-top: 1rem;">🏠 Basics</h3>
+            <p>Welcome to Neon City! Here you can buy plots of land and construct buildings. Each hex on the grid represents a plot of land.</p>
+            
+            <h3 style="color: #4ade80; margin-top: 1rem;">💰 Purchasing Land</h3>
+            <p>Click on an empty (grey) hex to buy it. Land starts at <strong>$500</strong>, but the price increases by $50 for everyone every time a plot is sold! Buy early!</p>
+            
+            <h3 style="color: var(--neon-purple); margin-top: 1rem;">🏗️ Building Types</h3>
+            <ul style="padding-left: 1.5rem; margin-top: 0.5rem;">
+                <li style="margin-bottom: 0.5rem;"><strong>Residential (Homes):</strong> These increase your <span style="color: var(--neon-purple)">XP Multiplier</span>. A higher multiplier means you earn more money from completing Lessons!</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Commercial (Businesses):</strong> These generate <span style="color: #4ade80">Daily Income</span> and allow other students to pay you a visit fee.</li>
+            </ul>
+        
+            <h3 style="color: var(--neon-blue); margin-top: 1rem;">📈 Strategy</h3>
+            <p>Balance your portfolio! Use residential buildings to boost your lesson earnings, and commercial buildings to generate passive income while you sleep.</p>
+        </div>
+    </div>
 </html>

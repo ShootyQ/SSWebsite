@@ -21,6 +21,18 @@ const addOrderBtn = document.getElementById("add-order-btn");
 const questionsContainer = document.getElementById("questions-container");
 const resetClassGoalBtn = document.getElementById("reset-class-goal-btn");
 
+// Student Progress Modal Elements
+const studentModal = document.getElementById("student-modal");
+const closeStudentModal = document.getElementById("close-student-modal");
+const studentName = document.getElementById("student-modal-name");
+const studentBalance = document.getElementById("student-balance");
+const studentNetWorth = document.getElementById("student-networth");
+const studentCompletedCount = document.getElementById("student-completed-count");
+const studentCompletedList = document.getElementById("student-completed-list");
+
+let lessonsMap = {};
+let usersMap = {};
+
 // Logout functionality
 if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
@@ -235,20 +247,24 @@ async function ensureDepressionVocabLesson() {
 async function loadUsers() {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
-        // Existing user loading logic... (omitted for brevity, assume unchanged logic here if I could)
-        // Re-read file to be safe, but I will just paste the content I know is there 
         usersList.innerHTML = ""; 
+        usersMap = {};
         
         querySnapshot.forEach((docSnap) => {
             const userData = docSnap.data();
+            usersMap[docSnap.id] = userData;
+
             const row = document.createElement("tr");
             
             let badgeClass = 'badge-student';
             if (userData.role === 'admin') badgeClass = 'badge-admin';
             else if (userData.role === 'guest') badgeClass = 'badge-secondary';
 
-            let actionsHtml = `<div style="display: flex; gap: 0.5rem;">`;
+            let actionsHtml = `<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">`;
             
+            // View Progress Button
+            actionsHtml += `<button class="btn-sm btn-view-progress" data-id="${docSnap.id}" style="background-color: #17a2b8; color: white;">View Progress</button>`;
+
             // Render buttons for roles that are NOT the current role
             if (userData.role !== 'guest') {
                 actionsHtml += `<button class="btn-sm btn-role-change" data-id="${docSnap.id}" data-role="guest" style="background-color: #6c757d; color: white;">Make Guest</button>`;
@@ -288,6 +304,10 @@ async function loadUsers() {
             btn.addEventListener('click', (e) => updateUserRole(e.target.dataset.id, e.target.dataset.role));
         });
 
+        document.querySelectorAll('.btn-view-progress').forEach(btn => {
+            btn.addEventListener('click', (e) => viewStudentProgress(e.target.dataset.id));
+        });
+
         loadingMessage.style.display = "none";
         usersTable.style.display = "table";
         
@@ -304,9 +324,12 @@ async function loadLessons() {
     try {
         const querySnapshot = await getDocs(collection(db, "lessons"));
         lessonsList.innerHTML = "";
+        lessonsMap = {};
         
         querySnapshot.forEach((docSnap) => {
             const lesson = docSnap.data();
+            lessonsMap[docSnap.id] = lesson.title;
+
             const row = document.createElement("tr");
             
             row.innerHTML = `
@@ -472,6 +495,41 @@ async function updateUserRole(userId, newRole) {
         console.error("Error updating role:", error);
         alert("Failed to update role: " + error.message);
     }
+}
+
+// Data Viewer Logic
+function viewStudentProgress(userId) {
+    const user = usersMap[userId];
+    if (!user) return;
+
+    studentName.textContent = user.displayName || user.email || "Unknown Student";
+    studentBalance.textContent = `$${(user.balance || 0).toLocaleString()}`;
+    studentNetWorth.textContent = `$${(user.netWorth || 0).toLocaleString()}`;
+    
+    const completed = user.completedLessons || [];
+    studentCompletedCount.textContent = completed.length;
+    
+    studentCompletedList.innerHTML = "";
+    if (completed.length === 0) {
+        studentCompletedList.innerHTML = "<li>No lessons completed yet.</li>";
+    } else {
+        completed.forEach(lessonId => {
+            const title = lessonsMap[lessonId] || `Unknown Lesson (${lessonId})`;
+            const li = document.createElement("li");
+            li.textContent = title;
+            studentCompletedList.appendChild(li);
+        });
+    }
+
+    studentModal.style.display = "block";
+}
+
+// Modal Events
+if(closeStudentModal) {
+    closeStudentModal.onclick = () => studentModal.style.display = "none";
+}
+window.onclick = (e) => {
+    if (e.target === studentModal) studentModal.style.display = "none";
 }
 
 // --- Lesson Creation Logic ---

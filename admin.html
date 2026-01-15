@@ -55,6 +55,23 @@
 
         <hr style="margin: 3rem 0; border: 0; border-top: 1px solid #eee;">
 
+        <!-- Student Progress Modal -->
+        <div id="student-modal" class="modal">
+            <div class="modal-content">
+                <span id="close-student-modal" class="close">&times;</span>
+                <h2 id="student-modal-name">Student Name</h2>
+                <div class="student-stats" style="margin-bottom: 1rem; display: flex; gap: 1rem; font-weight: bold;">
+                    <div>Balance: <span id="student-balance">$0</span></div>
+                    <div>Net Worth: <span id="student-networth">$0</span></div>
+                    <div>Completed: <span id="student-completed-count">0</span></div>
+                </div>
+                <h3>Completed Lessons</h3>
+                <ul id="student-completed-list" style="max-height: 300px; overflow-y: auto; padding-left: 1.5rem;">
+                    <!-- List items here -->
+                </ul>
+            </div>
+        </div>
+
         <h2 id="form-title">Create New Lesson</h2>
         <div class="profile-card" style="max-width: 800px; margin: 0 auto;">
             <form id="create-lesson-form">
