@@ -449,7 +449,6 @@ function renderInventory() {
             <button class="equip-btn" onclick="equipItem('${uniqueId}')">
                 ${isEquipped ? 'Unequip' : 'Equip'}
             </button>
-            ${isUnique ? `<button class="sell-btn" onclick="sellItem('${uniqueId}')">Quick Sell ($${itemDef.value})</button>` : ''}
             ${isUnique ? `<button class="list-btn" onclick="listItem('${uniqueId}')" style="margin-top:5px; background-color:#673ab7; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; width:100%;">List on Market</button>` : ''}
         `;
         els.inventoryGrid.appendChild(card);
