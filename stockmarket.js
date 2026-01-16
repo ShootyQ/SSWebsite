@@ -139,7 +139,7 @@ function renderStockList() {
 
 // Calculate weighted average cost basis
 function calculateAverageCost(symbol, transactions) {
-    if (!transactions || transactions.length === 0) return 0;
+    if (!transactions || !Array.isArray(transactions) || transactions.length === 0) return 0;
 
     // Filter for symbol and sort by date ascending (oldest first)
     const stockTrans = transactions
@@ -150,16 +150,19 @@ function calculateAverageCost(symbol, transactions) {
     let totalCost = 0;
 
     stockTrans.forEach(t => {
+        const tShares = Number(t.shares);
+        const tTotal = Number(t.total);
+        
         if (t.type === 'buy') {
             // Add new lot
-            totalShares += t.shares;
-            totalCost += t.total; // Total includes fees
+            totalShares += tShares;
+            totalCost += tTotal; // Total includes fees
         } else if (t.type === 'sell') {
             // Reduce shares, keep average cost same
             // To do this, we reduce totalCost proportional to shares sold
             if (totalShares > 0) {
                 const avgCost = totalCost / totalShares;
-                totalShares -= t.shares;
+                totalShares -= tShares;
                 totalCost = totalShares * avgCost;
             }
         }
@@ -187,37 +190,46 @@ function updateDashboard() {
     } else {
         document.getElementById("empty-portfolio-msg").style.display = "none";
         
-        portfolioItems.forEach(([symbol, shares]) => {
+        portfolioItems.forEach(([symbol, sharesVal]) => {
+            const shares = Number(sharesVal);
+            if (shares <= 0) return;
+
             const stock = marketData.find(s => s.symbol === symbol);
             
-            if (stock && shares > 0) {
-                const currentValue = stock.price * shares;
+            // Calculate Cost Basis
+            const avgCost = calculateAverageCost(symbol, userData.transactions);
+            const totalCost = avgCost * shares;
+
+            let currentValue = 0;
+            let gainLossAmt = 0;
+            let gainLossPct = 0;
+            let glClass = "";
+            let glSign = "";
+
+            if (stock) {
+                currentValue = stock.price * shares;
                 totalPortfolioValue += currentValue;
                 
-                // Calculate Cost Basis
-                const avgCost = calculateAverageCost(symbol, userData.transactions);
-                const totalCost = avgCost * shares;
-                
                 // Gain/Loss Calculations
-                const gainLossAmt = currentValue - totalCost;
-                const gainLossPct = totalCost > 0 ? (gainLossAmt / totalCost) * 100 : 0;
+                gainLossAmt = currentValue - totalCost;
+                gainLossPct = totalCost > 0 ? (gainLossAmt / totalCost) * 100 : 0;
                 
-                const glClass = gainLossAmt >= 0 ? "price-up" : "price-down";
-                const glSign = gainLossAmt >= 0 ? "+" : "";
-
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${symbol}</td>
-                    <td>${shares}</td>
-                    <td>${formatCurrency(avgCost)}</td>
-                    <td>${formatCurrency(stock.price)}</td>
-                    <td>${formatCurrency(currentValue)}</td>
-                    <td class="${glClass}">${glSign}${formatCurrency(Math.abs(gainLossAmt))}</td>
-                    <td class="${glClass}">${glSign}${gainLossPct.toFixed(2)}%</td>
-                    <td><button class="btn-sm btn-secondary sell-btn" data-symbol="${symbol}">Sell</button></td>
-                `;
-                portfolioListEl.appendChild(row);
+                glClass = gainLossAmt >= 0 ? "price-up" : "price-down";
+                glSign = gainLossAmt >= 0 ? "+" : "";
             }
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${symbol}</td>
+                <td>${shares}</td>
+                <td>${formatCurrency(avgCost)}</td>
+                <td>${stock ? formatCurrency(stock.price) : "N/A"}</td>
+                <td>${stock ? formatCurrency(currentValue) : "N/A"}</td>
+                <td class="${glClass}">${stock ? (glSign + formatCurrency(Math.abs(gainLossAmt))) : "N/A"}</td>
+                <td class="${glClass}">${stock ? (glSign + gainLossPct.toFixed(2) + "%") : "N/A"}</td>
+                <td><button class="btn-sm btn-secondary sell-btn" data-symbol="${symbol}">Sell</button></td>
+            `;
+            portfolioListEl.appendChild(row);
         });
         
         document.querySelectorAll(".sell-btn").forEach(btn => {
