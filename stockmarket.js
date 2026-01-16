@@ -44,6 +44,8 @@ let currentBatchIndex = 0;
 const BATCH_SIZE = 50;
 const REFRESH_RATE_MS = 60000; // 60 seconds (safe for API limits)
 
+const fetchedMissingSymbols = new Set(); // Track which symbols we've already tried to fetch
+
 // Initialize
 function init() {
     setupEventListeners();
@@ -173,10 +175,10 @@ function calculateAverageCost(symbol, transactions) {
 
 // Update Dashboard UI
 function updateDashboard() {
-    if (!userData || marketData.length === 0) return;
+    if (!userData || !marketData) return;
 
     // 1. Update Balance
-    userBalanceEl.textContent = formatCurrency(userData.balance);
+    userBalanceEl.textContent = formatCurrency(userData.balance || 0);
 
     // 2. Calculate Portfolio Value
     let totalPortfolioValue = 0;
@@ -185,6 +187,9 @@ function updateDashboard() {
     // Ensure portfolio is valid
     const portfolioItems = userData.portfolio ? Object.entries(userData.portfolio) : [];
     
+    // Check for missing stocks
+    const missingSymbols = [];
+
     if (portfolioItems.length === 0) {
         document.getElementById("empty-portfolio-msg").style.display = "block";
     } else {
@@ -196,6 +201,10 @@ function updateDashboard() {
 
             const stock = marketData.find(s => s.symbol === symbol);
             
+            if (!stock) {
+                missingSymbols.push(symbol);
+            }
+
             // Calculate Cost Basis
             const avgCost = calculateAverageCost(symbol, userData.transactions);
             const totalCost = avgCost * shares;
@@ -223,10 +232,10 @@ function updateDashboard() {
                 <td>${symbol}</td>
                 <td>${shares}</td>
                 <td>${formatCurrency(avgCost)}</td>
-                <td>${stock ? formatCurrency(stock.price) : "N/A"}</td>
-                <td>${stock ? formatCurrency(currentValue) : "N/A"}</td>
-                <td class="${glClass}">${stock ? (glSign + formatCurrency(Math.abs(gainLossAmt))) : "N/A"}</td>
-                <td class="${glClass}">${stock ? (glSign + gainLossPct.toFixed(2) + "%") : "N/A"}</td>
+                <td>${stock ? formatCurrency(stock.price) : "Updating..."}</td>
+                <td>${stock ? formatCurrency(currentValue) : "Updating..."}</td>
+                <td class="${glClass}">${stock ? (glSign + formatCurrency(Math.abs(gainLossAmt))) : "..."}</td>
+                <td class="${glClass}">${stock ? (glSign + gainLossPct.toFixed(2) + "%") : "..."}</td>
                 <td><button class="btn-sm btn-secondary sell-btn" data-symbol="${symbol}">Sell</button></td>
             `;
             portfolioListEl.appendChild(row);
@@ -240,8 +249,17 @@ function updateDashboard() {
         });
     }
 
+    // Trigger fetch for missing symbols if not already fetched
+    if (missingSymbols.length > 0) {
+        const toFetch = missingSymbols.filter(s => !fetchedMissingSymbols.has(s));
+        if (toFetch.length > 0) {
+            toFetch.forEach(s => fetchedMissingSymbols.add(s));
+            fetchSpecificStocks(toFetch);
+        }
+    }
+
     portfolioValueEl.textContent = formatCurrency(totalPortfolioValue);
-    const currentNetWorth = userData.balance + totalPortfolioValue;
+    const currentNetWorth = (userData.balance || 0) + totalPortfolioValue;
     netWorthEl.textContent = formatCurrency(currentNetWorth);
 
     // Calculate Total All-Time Profit (Net Worth - Start Balance 1000)
@@ -258,6 +276,74 @@ function updateDashboard() {
         updateDoc(doc(db, "users", currentUser.uid), {
             netWorth: currentNetWorth
         }).catch(err => console.error("Error updating net worth:", err));
+    }
+}
+
+// Fetch specific symbols that are missing from marketData
+async function fetchSpecificStocks(symbols) {
+    console.log("Fetching missing stocks:", symbols);
+    
+    // Limit to prevent API abuse (max 10 at a time)
+    const symbolsToFetch = symbols.slice(0, 10);
+    
+    const promises = symbolsToFetch.map(async (symbol) => {
+        try {
+            const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`);
+            const data = await response.json();
+            return {
+                symbol: symbol,
+                name: symbol, // Fallback name
+                price: data.c || 0,
+                change: data.dp || 0,
+                lastUpdated: new Date()
+            };
+        } catch (err) {
+            console.error(`Failed to fetch missing stock ${symbol}`, err);
+            return null;
+        }
+    });
+
+    const results = (await Promise.all(promises)).filter(s => s !== null && s.price > 0);
+    
+    if (results.length > 0 && marketData) {
+        // Optimistically update local marketData first
+        results.forEach(newStock => {
+            const index = marketData.findIndex(s => s.symbol === newStock.symbol);
+            if (index !== -1) {
+                marketData[index] = newStock;
+            } else {
+                marketData.push(newStock);
+            }
+        });
+        
+        // Re-render immediately
+        renderStockList();
+        updateDashboard();
+
+        // Persist to Firestore (Try to merge into system market)
+        try {
+            const marketRef = doc(db, "system", "market");
+            const marketSnap = await getDoc(marketRef);
+            let currentStocks = [];
+            if (marketSnap.exists()) {
+                currentStocks = marketSnap.data().stocks || [];
+            }
+            
+            // Merge results into currentStocks
+            results.forEach(newStock => {
+                const index = currentStocks.findIndex(s => s.symbol === newStock.symbol);
+                if (index !== -1) {
+                    currentStocks[index] = newStock;
+                } else {
+                    currentStocks.push(newStock);
+                }
+            });
+
+            await setDoc(marketRef, { stocks: currentStocks }, { merge: true });
+            
+        } catch (err) {
+            console.error("Failed to persist missing stocks:", err);
+        }
     }
 }
 
