@@ -173,6 +173,21 @@ function calculateAverageCost(symbol, transactions) {
     return totalShares > 0 ? totalCost / totalShares : 0;
 }
 
+// Helper to find last price from transaction history
+function getLastKnownPrice(symbol, transactions) {
+    if (!transactions || !Array.isArray(transactions)) return 0;
+    
+    // Sort buy/sell transactions descending by date
+    const relevant = transactions
+        .filter(t => t.symbol === symbol && t.price > 0)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (relevant.length > 0) {
+        return relevant[0].price;
+    }
+    return 0;
+}
+
 // Update Dashboard UI
 function updateDashboard() {
     if (!userData || !marketData) return;
@@ -199,10 +214,17 @@ function updateDashboard() {
             const shares = Number(sharesVal);
             if (shares <= 0) return;
 
-            const stock = marketData.find(s => s.symbol === symbol);
+            let stock = marketData.find(s => s.symbol === symbol);
+            let isEstimated = false;
             
             if (!stock) {
                 missingSymbols.push(symbol);
+                // Fallback mechanism: Try to find last known price from transaction history
+                const lastPrice = getLastKnownPrice(symbol, userData.transactions);
+                if (lastPrice > 0) {
+                    stock = { symbol: symbol, price: lastPrice, change: 0 };
+                    isEstimated = true;
+                }
             }
 
             // Calculate Cost Basis
@@ -227,12 +249,14 @@ function updateDashboard() {
                 glSign = gainLossAmt >= 0 ? "+" : "";
             }
 
+            const currentPriceDisplay = stock ? formatCurrency(stock.price) + (isEstimated ? " (Est)" : "") : "Updating...";
+
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${symbol}</td>
                 <td>${shares}</td>
                 <td>${formatCurrency(avgCost)}</td>
-                <td>${stock ? formatCurrency(stock.price) : "Updating..."}</td>
+                <td>${currentPriceDisplay}</td>
                 <td>${stock ? formatCurrency(currentValue) : "Updating..."}</td>
                 <td class="${glClass}">${stock ? (glSign + formatCurrency(Math.abs(gainLossAmt))) : "..."}</td>
                 <td class="${glClass}">${stock ? (glSign + gainLossPct.toFixed(2) + "%") : "..."}</td>
@@ -254,6 +278,8 @@ function updateDashboard() {
         const toFetch = missingSymbols.filter(s => !fetchedMissingSymbols.has(s));
         if (toFetch.length > 0) {
             toFetch.forEach(s => fetchedMissingSymbols.add(s));
+            // Only fetch if not using estimated price, OR always fetch to get live? 
+            // Better to always fetch to try and get live data.
             fetchSpecificStocks(toFetch);
         }
     }
