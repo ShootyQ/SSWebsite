@@ -110,6 +110,23 @@
             font-size: 3rem;
             margin-bottom: 0.5rem;
         }
+
+        /* Rewards Styles */
+        .rewards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .reward-tag {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #5d4037;
+            border: 2px dashed #ff6f00;
+        }
     </style>
 </head>
 <body>
@@ -128,10 +145,52 @@
                 <div id="goal-fill" class="goal-progress-fill" style="width: 0%;">0%</div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2rem;">
                 <span>0 Coins</span>
                 <span id="goal-status">0 / 300</span>
                 <span>300 Coins</span>
+            </div>
+
+            <!-- Rewards Display -->
+            <div style="border-top: 1px solid rgba(93, 64, 55, 0.2); paddingTop: 1rem;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">🎁 Unlocks at 300:</h3>
+                <div id="rewards-container" class="rewards-grid">
+                    <div class="reward-tag">🚌 Field Trip</div>
+                    <div class="reward-tag">🏃 Extra Recess</div>
+                    <!-- Dynamic rewards added here -->
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+            <!-- Suggestion Form -->
+            <div class="submission-card" style="margin-bottom: 0;">
+                <h3>💡 Suggest a Reward</h3>
+                <p>What should we do next? Suggest a class reward!</p>
+                <form id="suggestion-form" style="margin-top: 1rem;">
+                    <div class="coin-input-group">
+                        <input type="text" id="suggestion-text" placeholder="e.g. Pizza Party" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary" style="width: 100%;">Submit Suggestion</button>
+                </form>
+            </div>
+            
+            <!-- Leaderboard -->
+            <div class="submission-card" style="margin-bottom: 0;">
+                <h3>🏆 Top Collectors</h3>
+                <table style="width: 100%; margin-top: 1rem; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                            <th style="padding: 0.5rem;">Rank</th>
+                            <th style="padding: 0.5rem;">Name</th>
+                            <th style="padding: 0.5rem;">Coins</th>
+                            <th style="padding: 0.5rem;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="coin-leaderboard">
+                        <tr><td colspan="4">Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -160,9 +219,15 @@
         <!-- Admin Panel (Hidden by default) -->
         <div id="admin-panel" class="admin-card">
             <h3>👮 Admin Review</h3>
-            <p>Review pending coin submissions.</p>
+            
+            <h4 style="margin-top: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">Pending Coins</h4>
             <ul id="admin-list" class="admin-list">
                 <!-- Pending items here -->
+            </ul>
+
+            <h4 style="margin-top: 2rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">Pending Reward Suggestions</h4>
+            <ul id="admin-suggestions-list" class="admin-list">
+                <!-- Pending suggestions here -->
             </ul>
         </div>
     </main>
