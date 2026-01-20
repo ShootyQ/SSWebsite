@@ -37,6 +37,14 @@ export const BADGES = [
     { id: 'wealth_50k', title: 'Tycoon', description: 'Net Worth > $50,000', icon: '🏰', check: (u, m) => getNetWorth(u, m) >= 50000 },
     { id: 'wealth_100k', title: 'Diamond Hands', description: 'Net Worth > $100,000', icon: '💎', check: (u, m) => getNetWorth(u, m) >= 100000 },
 
+    // Coin Collection (6) - New!
+    { id: 'coins_25', title: 'Coin Collector', description: 'Collect 25 Class Coins', icon: '🪙', check: (u) => (u.coinsCollected || 0) >= 25 },
+    { id: 'coins_50', title: 'Saving Up', description: 'Collect 50 Class Coins', icon: '💰', check: (u) => (u.coinsCollected || 0) >= 50 },
+    { id: 'coins_100', title: 'Coin Hoarder', description: 'Collect 100 Class Coins', icon: '🏦', check: (u) => (u.coinsCollected || 0) >= 100 },
+    { id: 'coins_150', title: 'Treasure Hunter', description: 'Collect 150 Class Coins', icon: '🏴‍☠️', check: (u) => (u.coinsCollected || 0) >= 150 },
+    { id: 'coins_200', title: 'Dragon Hoard', description: 'Collect 200 Class Coins', icon: '🐲', check: (u) => (u.coinsCollected || 0) >= 200 },
+    { id: 'coins_250', title: 'Coin Tycoon', description: 'Collect 250 Class Coins', icon: '👑', check: (u) => (u.coinsCollected || 0) >= 250 },
+
     // Trading Activity (5)
     { id: 'trade_1', title: 'First Steps', description: 'Make your first trade', icon: '👟', check: (u) => (u.transactions || []).length >= 1 },
     { id: 'trade_5', title: 'Trader', description: 'Make 5 trades', icon: '🤝', check: (u) => (u.transactions || []).length >= 5 },
