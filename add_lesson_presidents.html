@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Presidential Lesson</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { font-family: sans-serif; padding: 2rem; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        button { padding: 1rem 2rem; font-size: 1.2rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Add "Presidential Order" Lesson to Database</h1>
+    <p>This script updates your Firebase database to include the new lesson. You must be logged in as an administrator for this to work.</p>
+    
+    <div id="status">Checking authentication...</div>
+    <br>
+    <button id="add-btn" disabled>Add Lesson to Database</button>
+
+    <script type="module">
+        import { auth, db } from "./firebase-config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const statusEl = document.getElementById('status');
+        const btn = document.getElementById('add-btn');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if admin (optional, but good practice)
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    statusEl.textContent = `Logged in as ${user.email} (Admin). Ready to add lesson.`;
+                    statusEl.className = "success";
+                    btn.disabled = false;
+                } else {
+                    statusEl.textContent = `Logged in as ${user.email}, but you are not an Admin. You may not have permission to write to the lessons collection.`;
+                    statusEl.className = "error";
+                    // Try anyway? No, let's keep it safe.
+                    // btn.disabled = false; 
+                }
+            } else {
+                statusEl.textContent = "You are not logged in. Please log in on the main page/admin page first, then refresh this page.";
+                statusEl.className = "error";
+            }
+        });
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            statusEl.textContent = "Adding lesson...";
+
+            const lessonData = {
+                title: 'Presidential Order: Lincoln to FDR',
+                description: 'Sort the U.S. Presidents from Abraham Lincoln to Franklin D. Roosevelt in correct chronological order.',
+                category: 'history',
+                difficulty: 'expert',
+                reward: 500,
+                campaign: 'History Challenge',
+                videoUrl: '', 
+                content: '<p>Drag and drop the presidents into the correct order, starting with Abraham Lincoln at the top and ending with Franklin D. Roosevelt at the bottom.</p>',
+                quiz: [
+                    {
+                        type: 'order',
+                        question: 'Sort the Presidents chronologically (Oldest to Newest):',
+                        correctOrder: [
+                            'Abraham Lincoln',
+                            'Andrew Johnson',
+                            'Ulysses S. Grant',
+                            'Rutherford B. Hayes',
+                            'James A. Garfield',
+                            'Chester A. Arthur',
+                            'Grover Cleveland',
+                            'Benjamin Harrison',
+                            'Grover Cleveland',
+                            'William McKinley',
+                            'Theodore Roosevelt',
+                            'William Howard Taft',
+                            'Woodrow Wilson',
+                            'Warren G. Harding',
+                            'Calvin Coolidge',
+                            'Herbert Hoover',
+                            'Franklin D. Roosevelt'
+                        ]
+                    }
+                ],
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, "lessons", "presidents_lincoln_fdr"), lessonData); // Use setDoc to specify ID
+                statusEl.innerHTML = "Success! Lesson added. <br>You can now go to <a href='admin.html'>Admin Panel</a> to see it, or <a href='lessons.html'>Lessons Page</a> to play it.";
+                statusEl.className = "success";
+            } catch (error) {
+                console.error(error);
+                statusEl.textContent = "Error adding lesson: " + error.message;
+                statusEl.className = "error";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
