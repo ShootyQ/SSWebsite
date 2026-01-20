@@ -524,6 +524,8 @@ input:checked + .slider:before {
     width: 90%;
     max-width: 400px;
     position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .close-modal {
