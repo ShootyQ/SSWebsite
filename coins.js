@@ -110,8 +110,21 @@ coinForm.addEventListener('submit', async (e) => {
 
 suggestionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const text = document.getElementById('suggestion-text').value;
+    const textInput = document.getElementById('suggestion-text');
+    const text = textInput.value.trim();
     if (!text) return;
+
+    const lowerText = text.toLowerCase();
+    
+    // Check duplicates
+    if (approvedSuggestions.includes(lowerText)) {
+        alert("This reward has already been approved!");
+        return;
+    }
+    if (pendingSuggestions.includes(lowerText)) {
+        alert("This suggestion is already pending approval!");
+        return;
+    }
 
     try {
         await addDoc(collection(db, "reward_suggestions"), {
@@ -121,7 +134,7 @@ suggestionForm.addEventListener('submit', async (e) => {
             status: 'pending',
             createdAt: new Date().toISOString()
         });
-        document.getElementById('suggestion-text').value = '';
+        textInput.value = '';
         alert("Suggestion submitted!");
     } catch (err) {
         console.error(err);
@@ -279,6 +292,9 @@ window.rejectSuggestion = async (id) => {
     } catch(e) { alert("Error"); }
 };
 
+let approvedSuggestions = []; // Cache for validation
+let pendingSuggestions = []; // Cache for validation
+
 // --- Rewards Logic ---
 async function loadApprovedRewards() {
     const q = query(collection(db, "reward_suggestions"), where("status", "==", "approved"));
@@ -288,12 +304,24 @@ async function loadApprovedRewards() {
             <div class="reward-tag">🏃 Extra Recess</div>
         `;
         
+        approvedSuggestions = ["field trip", "extra recess"]; // Reset local cache
+
         snap.forEach(doc => {
             const data = doc.data();
             html += `<div class="reward-tag">✨ ${data.suggestion}</div>`;
+            approvedSuggestions.push(data.suggestion.toLowerCase());
         });
         
         rewardsContainer.innerHTML = html;
+    });
+
+    // Also fetch pending for duplicates check
+    const qPending = query(collection(db, "reward_suggestions"), where("status", "==", "pending"));
+    onSnapshot(qPending, (snap) => {
+        pendingSuggestions = [];
+        snap.forEach(doc => {
+            pendingSuggestions.push(doc.data().suggestion.toLowerCase());
+        });
     });
 }
 
