@@ -12,6 +12,7 @@ const headerHTML = `
                 <li><a href="students.html">Community</a></li>
                 <li><a href="badges.html">Badges</a></li>
                 <li><a href="lessons.html">Lessons</a></li>
+                <li><a href="coins.html">Coins</a></li>
                 <li><a href="profile.html" id="profile-link" style="display: none;">My Profile</a></li>
             </ul>
         </nav>

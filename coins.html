@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Coins - SS Explorer</title>
+    <link rel="icon" type="image/png" href="LHFavicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .coin-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .goal-card {
+            background: linear-gradient(135deg, #ffd700 0%, #ffecb3 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+            margin-bottom: 2rem;
+            color: #5d4037;
+        }
+
+        .goal-card h2 {
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .goal-progress-container {
+            background: rgba(255, 255, 255, 0.5);
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .goal-progress-fill {
+            height: 100%;
+            background: #ff6f00;
+            width: 0%;
+            transition: width 1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .submission-card, .admin-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+
+        .history-list, .admin-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .history-item, .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-item:last-child { border-bottom: none; }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+        
+        .coin-input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .coin-input-group input {
+            flex: 1;
+        }
+
+        #admin-panel {
+            display: none;
+            border: 2px solid #2c3e50;
+        }
+
+        .admin-actions button {
+            margin-left: 0.5rem;
+        }
+
+        .coin-icon-large {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <script src="components.js"></script>
+
+    <main class="coin-container">
+        
+        <!-- Class Goal Section -->
+        <div class="goal-card">
+            <div class="coin-icon-large">🪙</div>
+            <h2>Class Coin Tracker</h2>
+            <p>Collect coins together to unlock the class reward!</p>
+            
+            <div class="goal-progress-container">
+                <div id="goal-fill" class="goal-progress-fill" style="width: 0%;">0%</div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                <span>0 Coins</span>
+                <span id="goal-status">0 / 300</span>
+                <span>300 Coins</span>
+            </div>
+        </div>
+
+        <!-- Student Submission Form -->
+        <div class="submission-card">
+            <h3>📥 Submit Coins</h3>
+            <p>Did you earn a coin in class? Submit it here for approval.</p>
+            <br>
+            <form id="coin-form">
+                <div class="coin-input-group">
+                    <input type="number" id="coin-amount" placeholder="Amount (e.g. 1)" min="1" max="10" required>
+                    <input type="text" id="coin-reason" placeholder="Reason (e.g. Good answer involved)" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit for Review</button>
+            </form>
+        </div>
+
+        <!-- Student History -->
+        <div class="submission-card">
+            <h3>📜 My History</h3>
+            <ul id="history-list" class="history-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <!-- Admin Panel (Hidden by default) -->
+        <div id="admin-panel" class="admin-card">
+            <h3>👮 Admin Review</h3>
+            <p>Review pending coin submissions.</p>
+            <ul id="admin-list" class="admin-list">
+                <!-- Pending items here -->
+            </ul>
+        </div>
+    </main>
+
+    <script type="module" src="coins.js"></script>
+</body>
+</html>
