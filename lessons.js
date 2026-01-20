@@ -80,6 +80,45 @@ async function fetchLessons() {
         querySnapshot.forEach((doc) => {
             LESSONS.push({ id: doc.id, ...doc.data() });
         });
+
+        // Manual Lesson Injection
+        LESSONS.push({
+            id: 'presidents_lincoln_fdr',
+            title: 'Presidential Order: Lincoln to FDR',
+            description: 'Sort the U.S. Presidents from Abraham Lincoln to Franklin D. Roosevelt in correct chronological order.',
+            category: 'history',
+            difficulty: 'expert',
+            reward: 500,
+            campaign: 'History Challenge',
+            videoUrl: '', 
+            content: '<p>Drag and drop the presidents into the correct order, starting with Abraham Lincoln at the top and ending with Franklin D. Roosevelt at the bottom.</p>',
+            quiz: [
+                {
+                    type: 'order',
+                    question: 'Sort the Presidents chronologically (Oldest to Newest):',
+                    correctOrder: [
+                        'Abraham Lincoln',
+                        'Andrew Johnson',
+                        'Ulysses S. Grant',
+                        'Rutherford B. Hayes',
+                        'James A. Garfield',
+                        'Chester A. Arthur',
+                        'Grover Cleveland',
+                        'Benjamin Harrison',
+                        'Grover Cleveland',
+                        'William McKinley',
+                        'Theodore Roosevelt',
+                        'William Howard Taft',
+                        'Woodrow Wilson',
+                        'Warren G. Harding',
+                        'Calvin Coolidge',
+                        'Herbert Hoover',
+                        'Franklin D. Roosevelt'
+                    ]
+                }
+            ]
+        });
+
     } catch (error) {
         console.error("Error fetching lessons:", error);
         els.grid.innerHTML = '<div class="error">Failed to load lessons. Please try again later.</div>';
