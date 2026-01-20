@@ -985,22 +985,41 @@ async function loadLeaderboard() {
     try {
         const usersSnapshot = await getDocs(collection(db, "users"));
         let leaders = [];
+        let admins = [];
 
         usersSnapshot.forEach(doc => {
             const data = doc.data();
             const perf = calculatePerformance(data);
-             
-            leaders.push({
-                name: data.nickname || "Anonymous Trader",
-                roi: perf.roi,
-                profit: perf.profit
-            });
+            const nickname = data.nickname || "Anonymous Trader";
+
+            // Filter out users with no stocks (invested < 10) AND no profit (inactive)
+            // Or better: Filter out those who have never invested.
+            // Check if they have 0 invested and a standard balance of 1000 (meaning they did nothing)
+            // Or we check performace transactions length? 
+            const txCount = (data.transactions || []).length;
+            
+            // Only list users who have made at least one transaction
+            if (txCount > 0) {
+                const userEntry = {
+                    name: nickname,
+                    role: data.role || 'student',
+                    roi: perf.roi,
+                    profit: perf.profit
+                };
+
+                if (data.role === 'admin' || data.email === 'admin@example.com' || (data.claims && data.claims.admin)) {
+                    admins.push(userEntry);
+                } else {
+                    leaders.push(userEntry);
+                }
+            }
         });
 
-        // Sort by ROI (High to Low)
+        // Sort Regular Leaders by ROI (High to Low)
         leaders.sort((a, b) => b.roi - a.roi);
 
-        tbody.innerHTML = leaders.map((leader, index) => {
+        // Render Leaders
+        let html = leaders.map((leader, index) => {
             const roiClass = leader.roi >= 0 ? "price-up" : "price-down";
             const profitClass = leader.profit >= 0 ? "price-up" : "price-down";
             const roiSign = leader.roi >= 0 ? "+" : "";
@@ -1013,6 +1032,31 @@ async function loadLeaderboard() {
                 <td class="${profitClass}">${formatCurrency(leader.profit)}</td>
             </tr>
         `}).join('');
+
+        // Append Admins at the bottom (Unranked)
+        if (admins.length > 0) {
+            html += `<tr><td colspan="4" style="padding: 1rem; text-align: center; font-weight: bold; background: #f8f9fa;">--- Administrators ---</td></tr>`;
+            
+            html += admins.map(admin => {
+                const roiClass = admin.roi >= 0 ? "price-up" : "price-down";
+                const profitClass = admin.profit >= 0 ? "price-up" : "price-down";
+                const roiSign = admin.roi >= 0 ? "+" : "";
+                
+                return `
+                <tr style="opacity: 0.7; background: #fffbe6;">
+                    <td><span class="rank-badge" style="background:#555;">ADMIN</span></td>
+                    <td>${admin.name}</td>
+                    <td class="${roiClass}" style="font-weight:bold;">${roiSign}${admin.roi.toFixed(2)}%</td>
+                    <td class="${profitClass}">${formatCurrency(admin.profit)}</td>
+                </tr>
+            `}).join('');
+        }
+        
+        if (leaders.length === 0 && admins.length === 0) {
+             html = '<tr><td colspan="4" style="text-align:center;">No active traders found.</td></tr>';
+        }
+
+        tbody.innerHTML = html;
 
     } catch (error) {
         console.error("Error loading leaderboard:", error);
