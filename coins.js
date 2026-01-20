@@ -70,9 +70,10 @@ function updateProgressBar(current, target) {
 coinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const amount = parseInt(document.getElementById('coin-amount').value);
-    const reason = document.getElementById('coin-reason').value;
+    const dateEarned = document.getElementById('coin-date').value;
 
     if (!amount || amount < 1) return alert("Invalid amount");
+    if (!dateEarned) return alert("Please select a date");
 
     const submitBtn = coinForm.querySelector('button');
     submitBtn.disabled = true;
@@ -84,7 +85,7 @@ coinForm.addEventListener('submit', async (e) => {
             userEmail: currentUser.email, // Store email for admin visibility
             nickname: currentUser.displayName || "Student", // Ideally fetch nickname
             amount: amount,
-            reason: reason,
+            dateEarned: dateEarned,
             status: 'pending',
             createdAt: new Date().toISOString()
         });
@@ -124,8 +125,8 @@ function subscribeToHistory() {
             <li class="history-item">
                 <div>
                     <strong>${sub.amount} Coin${sub.amount > 1 ? 's' : ''}</strong>
-                    <span style="color:#666; font-size:0.9rem;"> - ${sub.reason}</span>
-                    <div style="font-size:0.8rem; color:#999;">${new Date(sub.createdAt).toLocaleDateString()}</div>
+                    <span style="color:#666; font-size:0.9rem;"> - ${sub.dateEarned || 'Unknown Date'}</span>
+                    <div style="font-size:0.8rem; color:#999;">Submitted: ${new Date(sub.createdAt).toLocaleDateString()}</div>
                 </div>
                 <span class="status-badge status-${sub.status}">${sub.status}</span>
             </li>
@@ -154,7 +155,7 @@ function subscribeToPending() {
                 <div>
                     <strong>${sub.nickname || sub.userEmail}</strong> wants to submit 
                     <strong>${sub.amount} Coin${sub.amount > 1 ? 's' : ''}</strong><br>
-                    <span style="font-style:italic;">"${sub.reason}"</span>
+                    <span style="font-style:italic;">Date Earned: ${sub.dateEarned || 'Unknown'}</span>
                 </div>
                 <div class="admin-actions">
                     <button class="btn-sm" style="background:#2ecc71; color:white; border:none; padding:5px 10px; cursor:pointer;" onclick="approveCoin('${sub.id}', ${sub.amount})">✔</button>
